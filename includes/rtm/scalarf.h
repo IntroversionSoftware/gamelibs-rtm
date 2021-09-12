@@ -290,12 +290,16 @@ namespace rtm
 		x1 = _mm_sub_ss(half, _mm_mul_ss(input_half, x1));
 		x1 = _mm_add_ss(_mm_mul_ss(x0, x1), x0);
 
+#if 0
 		// Second iteration
 		__m128 x2 = _mm_mul_ss(x1, x1);
 		x2 = _mm_sub_ss(half, _mm_mul_ss(input_half, x2));
 		x2 = _mm_add_ss(_mm_mul_ss(x1, x2), x1);
 
 		return scalarf{ x2 };
+#else
+		return scalarf{ x1 };
+#endif
 	}
 #endif
 
