@@ -97,3 +97,15 @@
 // Joins two pre-processor tokens: RTM_JOIN_TOKENS(foo, bar) yields 'foobar'
 //////////////////////////////////////////////////////////////////////////
 #define RTM_JOIN_TOKENS(a, b) a ## b
+
+#if __has_cpp_attribute(likely)
+#define RTM_LIKELY(x) (x) [[likely]]
+#else
+#define RTM_LIKELY(x) (x)
+#endif
+
+#if __has_cpp_attribute(unlikely)
+#define RTM_UNLIKELY(x) (x) [[unlikely]]
+#else
+#define RTM_UNLIKELY(x) (x)
+#endif
