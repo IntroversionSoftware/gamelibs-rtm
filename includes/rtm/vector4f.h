@@ -1156,7 +1156,7 @@ namespace rtm
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator float() const RTM_NO_EXCEPT
 			{
-#if defined(RTM_SSE4_INTRINSICS) && 0
+#if defined(RTM_SSE4_INTRINSICS)
 				// SSE4 dot product instruction isn't precise enough
 				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0x7F));
 #elif defined(RTM_SSE2_INTRINSICS)
@@ -1182,19 +1182,23 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalarf() const RTM_NO_EXCEPT
 			{
+#if defined(RTM_SSE4_INTRINSICS)
+				return scalarf{ _mm_dp_ps(lhs, rhs, 0x7F) };
+#else
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
 				__m128 y2_0_0_0 = _mm_shuffle_ps(x2_y2_z2_w2, x2_y2_z2_w2, _MM_SHUFFLE(0, 0, 0, 1));
 				__m128 x2y2_0_0_0 = _mm_add_ss(x2_y2_z2_w2, y2_0_0_0);
 				__m128 z2_0_0_0 = _mm_shuffle_ps(x2_y2_z2_w2, x2_y2_z2_w2, _MM_SHUFFLE(0, 0, 0, 2));
 				return scalarf{ _mm_add_ss(x2y2_0_0_0, z2_0_0_0) };
+#endif
 			}
 #endif
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator vector4f() const RTM_NO_EXCEPT
 			{
-#if defined(RTM_SSE4_INTRINSICS) && 0
+#if defined(RTM_SSE4_INTRINSICS)
 				// SSE4 dot product instruction isn't precise enough
-				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF));
+				return _mm_dp_ps(lhs, rhs, 0x7F);
 #elif defined(RTM_SSE2_INTRINSICS)
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
 				__m128 y2_0_0_0 = _mm_shuffle_ps(x2_y2_z2_w2, x2_y2_z2_w2, _MM_SHUFFLE(0, 0, 0, 1));
