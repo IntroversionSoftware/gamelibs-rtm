@@ -107,3 +107,15 @@
 #else
 	#define RTM_HAS_BUILTIN(x) 0
 #endif
+
+#if __has_cpp_attribute(likely)
+	#define RTM_LIKELY(x) (x) [[likely]]
+#else
+	#define RTM_LIKELY(x) (x)
+#endif
+
+#if __has_cpp_attribute(unlikely)
+	#define RTM_UNLIKELY(x) (x) [[unlikely]]
+#else
+	#define RTM_UNLIKELY(x) (x)
+#endif
