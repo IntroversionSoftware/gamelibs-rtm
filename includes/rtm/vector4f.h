@@ -884,6 +884,26 @@ namespace rtm
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	// Per component reciprocal square root of the input: 1.0 / sqrt(input)
+	//////////////////////////////////////////////////////////////////////////
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_sqrt_reciprocal(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128 nr = _mm_rsqrt_ps(input);
+		const __m128 muls = _mm_mul_ps(_mm_mul_ps(nr, nr), input);
+		const __m128 beta = _mm_mul_ps(_mm_set1_ps(0.5f), nr);
+		const __m128 gamma = _mm_sub_ps(_mm_set1_ps(3.0f), muls);
+		return _mm_mul_ps(beta, gamma);
+#else
+		scalarf x = vector_get_x(input);
+		scalarf y = vector_get_y(input);
+		scalarf z = vector_get_z(input);
+		scalarf w = vector_get_w(input);
+		return vector_set(scalar_sqrt_reciprocal(x), scalar_sqrt_reciprocal(y), scalar_sqrt_reciprocal(z), scalar_sqrt_reciprocal(w));
+#endif
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	// Per component returns the smallest integer value not less than the input (round towards positive infinity).
 	// vector_ceil([1.8, 1.0, -1.8, -1.0]) = [2.0, 1.0, -1.0, -1.0]
 	//////////////////////////////////////////////////////////////////////////
@@ -1410,8 +1430,8 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_normalize3(vector4f_arg0 input) RTM_NO_EXCEPT
 	{
 		// Reciprocal is more accurate to normalize with
-		const scalarf len_sq = vector_length_squared3(input);
-		return vector_mul(input, scalar_sqrt_reciprocal(len_sq));
+		const vector4f len_sq = vector_length_squared3(input);
+		return vector_mul(input, vector_sqrt_reciprocal(len_sq));
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1422,9 +1442,9 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_normalize3(vector4f_arg0 input, vector4f_arg1 fallback, float threshold = 1.0E-8F) RTM_NO_EXCEPT
 	{
 		// Reciprocal is more accurate to normalize with
-		const scalarf len_sq = vector_length_squared3(input);
-		if (scalar_cast(len_sq) >= threshold)
-			return vector_mul(input, scalar_sqrt_reciprocal(len_sq));
+		const vector4f len_sq = vector_length_squared3(input);
+		if RTM_LIKELY(vector_get_x(len_sq) >= threshold)
+			return vector_mul(input, vector_sqrt_reciprocal(len_sq));
 		else
 			return fallback;
 	}
