@@ -1369,7 +1369,7 @@ namespace rtm
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator float() const RTM_NO_EXCEPT
 			{
-#if defined(RTM_SSE4_INTRINSICS) && 0
+#if defined(RTM_SSE4_INTRINSICS)
 				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF));
 #elif defined(RTM_SSE2_INTRINSICS)
@@ -1397,7 +1397,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalarf() const RTM_NO_EXCEPT
 			{
-#if defined(RTM_SSE4_INTRINSICS) && 0
+#if defined(RTM_SSE4_INTRINSICS)
 				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return scalarf{ _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF)) };
 #else
@@ -1413,7 +1413,7 @@ namespace rtm
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator vector4f() const RTM_NO_EXCEPT
 			{
-#if defined(RTM_SSE4_INTRINSICS) && 0
+#if defined(RTM_SSE4_INTRINSICS)
 				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_dp_ps(lhs, rhs, 0xFF);
 #elif defined(RTM_SSE2_INTRINSICS)
@@ -1539,7 +1539,7 @@ namespace rtm
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator float() const RTM_NO_EXCEPT
 			{
-#if defined(RTM_SSE4_INTRINSICS) && 0
+#if defined(RTM_SSE4_INTRINSICS)
 				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0x7F));
 #elif defined(RTM_SSE2_INTRINSICS)
@@ -1575,7 +1575,7 @@ namespace rtm
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator vector4f() const RTM_NO_EXCEPT
 			{
-#if defined(RTM_SSE4_INTRINSICS) && 0
+#if defined(RTM_SSE4_INTRINSICS)
 				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF));
 #elif defined(RTM_SSE2_INTRINSICS)
