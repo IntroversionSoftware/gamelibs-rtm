@@ -1033,8 +1033,13 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline vector4f RTM_SIMD_CALL scalar_sincos(scalarf angle) RTM_NO_EXCEPT
 	{
-		scalarf sin_ = scalar_sin(angle);
-		scalarf cos_ = scalar_cos(angle);
+		scalarf sin_, cos_;
+#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS)
+		sin_.value = _mm_sincos_ps(&cos_.value, angle.value);
+#else
+		sin_ = scalar_sin(angle);
+		cos_ = scalar_cos(angle);
+#endif
 
 		return _mm_unpacklo_ps(sin_.value, cos_.value);
 	}
@@ -1049,8 +1054,13 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline vector4f RTM_SIMD_CALL scalar_sincos(float angle) RTM_NO_EXCEPT
 	{
 		scalarf angle_ = scalar_set(angle);
-		scalarf sin_ = scalar_sin(angle_);
-		scalarf cos_ = scalar_cos(angle_);
+		scalarf sin_, cos_;
+#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS)
+		sin_.value = _mm_sincos_ps(&cos_.value, angle_.value);
+#else
+		sin_ = scalar_sin(angle_);
+		cos_ = scalar_cos(angle_);
+#endif
 
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_unpacklo_ps(sin_.value, cos_.value);
@@ -1066,8 +1076,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline void scalar_sincos(float angle, float& out_sin, float& out_cos) RTM_NO_EXCEPT
 	{
+#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS)
+		vector4f sincos_ = scalar_sincos(angle);
+		out_sin = _mm_cvtss_f32(sincos_);
+		out_cos = _mm_cvtss_f32(_mm_shuffle_ps(sincos_, sincos_, _MM_SHUFFLE(1, 1, 1, 1)));
+#	else
 		out_sin = scalar_sin(angle);
 		out_cos = scalar_cos(angle);
+#	endif
 	}
 
 #if defined(RTM_SSE2_INTRINSICS)
