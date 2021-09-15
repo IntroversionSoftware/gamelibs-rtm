@@ -1031,7 +1031,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline vector4f RTM_SIMD_CALL scalar_sincos(scalarf angle) RTM_NO_EXCEPT
 	{
 		scalarf sin_, cos_;
-#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS)
+#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS) && !defined(__clang__)
 		sin_.value = _mm_sincos_ps(&cos_.value, angle.value);
 #else
 		sin_ = scalar_sin(angle);
@@ -1052,7 +1052,7 @@ namespace rtm
 	{
 		scalarf angle_ = scalar_set(angle);
 		scalarf sin_, cos_;
-#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS)
+#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS) && !defined(__clang__)
 		sin_.value = _mm_sincos_ps(&cos_.value, angle_.value);
 #else
 		sin_ = scalar_sin(angle_);
@@ -1074,7 +1074,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline void scalar_sincos(float angle, float& out_sin, float& out_cos) RTM_NO_EXCEPT
 	{
-#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS)
+#	if defined(_MSC_VER) && defined(RTM_SSE2_INTRINSICS) && !defined(__clang__)
 		vector4f sincos_ = scalar_sincos(angle);
 		out_sin = _mm_cvtss_f32(sincos_);
 		out_cos = _mm_cvtss_f32(_mm_shuffle_ps(sincos_, sincos_, _MM_SHUFFLE(1, 1, 1, 1)));
