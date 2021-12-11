@@ -267,7 +267,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE float RTM_SIMD_CALL scalar_sqrt(float input) RTM_NO_EXCEPT
 	{
-#if defined(RTM_SSE2_INTRINSICS)
+#if 0 && defined(RTM_SSE2_INTRINSICS)
 		return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ps1(input)));
 #else
 		return std::sqrt(input);
