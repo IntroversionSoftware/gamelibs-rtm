@@ -1908,7 +1908,7 @@ namespace rtm
 			{
 #if defined(RTM_SSE4_INTRINSICS)
 				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
-				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF));
+				return _mm_dp_ps(lhs, rhs, 0xFF);
 #elif defined(RTM_SSE2_INTRINSICS)
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
 				__m128 y2_0_0_0 = _mm_shuffle_ps(x2_y2_z2_w2, x2_y2_z2_w2, _MM_SHUFFLE(0, 0, 0, 1));
