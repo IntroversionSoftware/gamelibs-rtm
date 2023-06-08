@@ -100,7 +100,11 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		const __m128 xy = _mm_castpd_ps(_mm_load_sd(rtm_impl::bit_cast<const double*>(input)));
 		const __m128 z = _mm_load_ss(input + 2);
+#if defined(RTM_SSE4_INTRINSICS)
+		return _mm_insert_ps(xy, z, 0x20);
+#else
 		return _mm_movelh_ps(xy, z);
+#endif
 #elif defined(RTM_WASM128_INTRINSICS)
 		return wasm_v128_load32_lane(input + 2, wasm_v128_load64_zero(input), 2);
 #elif defined(RTM_NEON_INTRINSICS)
@@ -147,7 +151,11 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		const __m128 xy = _mm_castpd_ps(_mm_load_sd(rtm_impl::bit_cast<const double*>(&input->x)));
 		const __m128 z = _mm_load_ss(&input->z);
+#if defined(RTM_SSE4_INTRINSICS)
+		return _mm_insert_ps(xy, z, 0x20);
+#else
 		return _mm_movelh_ps(xy, z);
+#endif
 #elif defined(RTM_WASM128_INTRINSICS)
 		return wasm_v128_load32_lane(&input->z, wasm_v128_load64_zero(&input->x), 2);
 #elif defined(RTM_NEON_INTRINSICS)
