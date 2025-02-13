@@ -28,7 +28,7 @@ elseif(${UNIX})
 	set(PLATFORM_UNIX 1)
 	set(PLATFORM_NAME "UNIX")
 else()
-	message(FATAL_ERROR "Unknown platform ${CMAKE_SYSTEM_NAME}!")
+	set(PLATFORM_NAME ${CMAKE_SYSTEM_NAME})
 endif()
 
 message(STATUS "Detected platform: ${PLATFORM_NAME}")
