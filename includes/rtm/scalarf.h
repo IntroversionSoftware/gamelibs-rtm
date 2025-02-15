@@ -284,7 +284,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalarf RTM_SIMD_CALL scalar_sqrt_reciprocal(scalarf_arg0 input) RTM_NO_EXCEPT
 	{
-		// Perform two passes of Newton-Raphson iteration on the hardware estimate
+		// Perform one Newton-Raphson iteration on the hardware estimate
 		const __m128 half = _mm_set_ss(0.5F);
 		const __m128 input_half = _mm_mul_ss(input.value, half);
 		const __m128 x0 = _mm_rsqrt_ss(input.value);
@@ -294,12 +294,7 @@ namespace rtm
 		x1 = _mm_sub_ss(half, _mm_mul_ss(input_half, x1));
 		x1 = _mm_add_ss(_mm_mul_ss(x0, x1), x0);
 
-		// Second iteration
-		__m128 x2 = _mm_mul_ss(x1, x1);
-		x2 = _mm_sub_ss(half, _mm_mul_ss(input_half, x2));
-		x2 = _mm_add_ss(_mm_mul_ss(x1, x2), x1);
-
-		return scalarf{ x2 };
+		return scalarf{ x1 };
 	}
 #endif
 
