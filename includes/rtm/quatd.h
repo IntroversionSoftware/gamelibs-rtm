@@ -591,7 +591,7 @@ namespace rtm
 				const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
 				const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
 				const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
-				return scalard{ _mm_cvtsd_f64(x2y2z2w2) };
+				return scalard{ x2y2z2w2 };
 			}
 #endif
 
@@ -619,7 +619,7 @@ namespace rtm
 		const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
 		const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
 		const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
-		return scalard{ _mm_cvtsd_f64(x2y2z2w2) };
+		return scalard{ x2y2z2w2 };
 #else
 		const scalard lhs_x = quat_get_x_as_scalar(lhs);
 		const scalard lhs_y = quat_get_y_as_scalar(lhs);
