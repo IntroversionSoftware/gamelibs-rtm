@@ -386,10 +386,15 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL quat_store(quatd_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(output, input.xy);
+		_mm_storeu_pd(output + 2, input.zw);
+#else
 		output[0] = quat_get_x(input);
 		output[1] = quat_get_y(input);
 		output[2] = quat_get_z(input);
 		output[3] = quat_get_w(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -397,10 +402,15 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL quat_store(quatd_arg0 input, float4d* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(&output->x, input.xy);
+		_mm_storeu_pd(&output->z, input.zw);
+#else
 		output->x = quat_get_x(input);
 		output->y = quat_get_y(input);
 		output->z = quat_get_z(input);
 		output->w = quat_get_w(input);
+#endif
 	}
 
 
@@ -416,7 +426,13 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_conjugate(quatd_arg0 input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		constexpr __m128d signs_xy = RTM_VECTOR2D_MAKE(-0.0, -0.0);
+		constexpr __m128d signs_zw = RTM_VECTOR2D_MAKE(-0.0, 0.0);
+		return quatd{ _mm_xor_pd(input.xy, signs_xy), _mm_xor_pd(input.zw, signs_zw) };
+#else
 		return quat_set(-quat_get_x(input), -quat_get_y(input), -quat_get_z(input), quat_get_w(input));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -424,7 +440,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline quatd RTM_SIMD_CALL quat_add(quatd_arg0 lhs, quatd_arg1 rhs) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return quatd{ _mm_add_pd(lhs.xy, rhs.xy), _mm_add_pd(lhs.zw, rhs.zw) };
+#else
 		return quat_set(quat_get_x(lhs) + quat_get_x(rhs), quat_get_y(lhs) + quat_get_y(rhs), quat_get_z(lhs) + quat_get_z(rhs), quat_get_w(lhs) + quat_get_w(rhs));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -434,6 +454,45 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline quatd RTM_SIMD_CALL quat_mul(quatd_arg0 lhs, quatd_arg1 rhs) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		constexpr __m128d signs_pos_neg = RTM_VECTOR2D_MAKE(0.0, -0.0);
+		constexpr __m128d signs_neg_neg = RTM_VECTOR2D_MAKE(-0.0, -0.0);
+		constexpr __m128d signs_neg_pos = RTM_VECTOR2D_MAKE(-0.0, 0.0);
+
+		const __m128d r_xx = _mm_shuffle_pd(rhs.xy, rhs.xy, _MM_SHUFFLE2(0, 0));
+		const __m128d r_yy = _mm_shuffle_pd(rhs.xy, rhs.xy, _MM_SHUFFLE2(1, 1));
+		const __m128d r_zz = _mm_shuffle_pd(rhs.zw, rhs.zw, _MM_SHUFFLE2(0, 0));
+		const __m128d r_ww = _mm_shuffle_pd(rhs.zw, rhs.zw, _MM_SHUFFLE2(1, 1));
+
+		const __m128d lxrw_lyrw = _mm_mul_pd(r_ww, lhs.xy);
+		const __m128d lzrw_lwrw = _mm_mul_pd(r_ww, lhs.zw);
+		const __m128d l_wz = _mm_shuffle_pd(lhs.zw, lhs.zw, _MM_SHUFFLE2(0, 1));
+		const __m128d l_yx = _mm_shuffle_pd(lhs.xy, lhs.xy, _MM_SHUFFLE2(0, 1));
+
+		const __m128d lwrx_lzrx = _mm_mul_pd(r_xx, l_wz);
+		const __m128d lyrx_lxrx = _mm_mul_pd(r_xx, l_yx);
+
+		const __m128d lwrx_nlzrx = _mm_xor_pd(lwrx_lzrx, signs_pos_neg);
+		const __m128d lyrx_nlxrx = _mm_xor_pd(lyrx_lxrx, signs_pos_neg);
+
+		const __m128d lzry_lwry = _mm_mul_pd(r_yy, lhs.zw);
+		const __m128d lxry_lyry = _mm_mul_pd(r_yy, lhs.xy);
+
+		const __m128d nlxry_nlyry = _mm_xor_pd(lxry_lyry, signs_neg_neg);
+
+		const __m128d lyrz_lxrz = _mm_mul_pd(r_zz, l_yx);
+		const __m128d lwrz_lzrz = _mm_mul_pd(r_zz, l_wz);
+		const __m128d result0_xy = _mm_add_pd(lxrw_lyrw, lwrx_nlzrx);
+		const __m128d result0_zw = _mm_add_pd(lzrw_lwrw, lyrx_nlxrx);
+
+		const __m128d nlyrz_lxrz = _mm_xor_pd(lyrz_lxrz, signs_neg_pos);
+		const __m128d lwrz_nlzrz = _mm_xor_pd(lwrz_lzrz, signs_pos_neg);
+
+		const __m128d result1_xy = _mm_add_pd(lzry_lwry, nlyrz_lxrz);
+		const __m128d result1_zw = _mm_add_pd(nlxry_nlyry, lwrz_nlzrz);
+
+		return quatd{ _mm_add_pd(result0_xy, result1_xy), _mm_add_pd(result0_zw, result1_zw) };
+#else
 		double lhs_x = quat_get_x(lhs);
 		double lhs_y = quat_get_y(lhs);
 		double lhs_z = quat_get_z(lhs);
@@ -450,6 +509,7 @@ namespace rtm
 		double w = (rhs_w * lhs_w) - (rhs_x * lhs_x) - (rhs_y * lhs_y) - (rhs_z * lhs_z);
 
 		return quat_set(x, y, z, w);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -457,7 +517,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_mul(quatd_arg0 quat, double scalar) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d scalar_v = _mm_set1_pd(scalar);
+		return quatd{ _mm_mul_pd(quat.xy, scalar_v), _mm_mul_pd(quat.zw, scalar_v) };
+#else
 		return quat_set(quat_get_x(quat) * scalar, quat_get_y(quat) * scalar, quat_get_z(quat) * scalar, quat_get_w(quat) * scalar);
+#endif
 	}
 
 #if defined(RTM_SSE2_INTRINSICS)
@@ -466,7 +531,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_mul(quatd_arg0 quat, scalard_arg1 scalar) RTM_NO_EXCEPT
 	{
-		return quat_mul(quat, scalar_cast(scalar));
+		return quatd{ _mm_mul_pd(quat.xy, scalar.value), _mm_mul_pd(quat.zw, scalar.value) };
 	}
 #endif
 
@@ -493,6 +558,14 @@ namespace rtm
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK inline RTM_SIMD_CALL operator double() const RTM_NO_EXCEPT
 			{
+#if defined(RTM_SSE2_INTRINSICS)
+				const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+				const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+				const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+				const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+				const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+				return _mm_cvtsd_f64(x2y2z2w2);
+#else
 				const scalard lhs_x = quat_get_x_as_scalar(lhs);
 				const scalard lhs_y = quat_get_y_as_scalar(lhs);
 				const scalard lhs_z = quat_get_z_as_scalar(lhs);
@@ -506,25 +579,19 @@ namespace rtm
 				const scalard zz = scalar_mul(lhs_z, rhs_z);
 				const scalard ww = scalar_mul(lhs_w, rhs_w);
 				return scalar_cast(scalar_add(scalar_add(xx, yy), scalar_add(zz, ww)));
+#endif
 			}
 
 #if defined(RTM_SSE2_INTRINSICS)
 			RTM_DEPRECATED("Use 'as_scalar' suffix instead. To be removed in 2.4.")
 			RTM_DISABLE_SECURITY_COOKIE_CHECK inline RTM_SIMD_CALL operator scalard() const RTM_NO_EXCEPT
 			{
-				const scalard lhs_x = quat_get_x_as_scalar(lhs);
-				const scalard lhs_y = quat_get_y_as_scalar(lhs);
-				const scalard lhs_z = quat_get_z_as_scalar(lhs);
-				const scalard lhs_w = quat_get_w_as_scalar(lhs);
-				const scalard rhs_x = quat_get_x_as_scalar(rhs);
-				const scalard rhs_y = quat_get_y_as_scalar(rhs);
-				const scalard rhs_z = quat_get_z_as_scalar(rhs);
-				const scalard rhs_w = quat_get_w_as_scalar(rhs);
-				const scalard xx = scalar_mul(lhs_x, rhs_x);
-				const scalard yy = scalar_mul(lhs_y, rhs_y);
-				const scalard zz = scalar_mul(lhs_z, rhs_z);
-				const scalard ww = scalar_mul(lhs_w, rhs_w);
-				return scalar_add(scalar_add(xx, yy), scalar_add(zz, ww));
+				const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+				const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+				const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+				const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+				const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+				return scalard{ _mm_cvtsd_f64(x2y2z2w2) };
 			}
 #endif
 
@@ -546,6 +613,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline scalard RTM_SIMD_CALL quat_dot_as_scalar(quatd_arg0 lhs, quatd_arg1 rhs) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+		const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+		const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+		const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+		const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+		return scalard{ _mm_cvtsd_f64(x2y2z2w2) };
+#else
 		const scalard lhs_x = quat_get_x_as_scalar(lhs);
 		const scalard lhs_y = quat_get_y_as_scalar(lhs);
 		const scalard lhs_z = quat_get_z_as_scalar(lhs);
@@ -559,6 +634,7 @@ namespace rtm
 		const scalard zz = scalar_mul(lhs_z, rhs_z);
 		const scalard ww = scalar_mul(lhs_w, rhs_w);
 		return scalar_add(scalar_add(xx, yy), scalar_add(zz, ww));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -841,7 +917,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_neg(quatd_arg0 input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		constexpr __m128d signs = RTM_VECTOR2D_MAKE(-0.0, -0.0);
+		return quatd{ _mm_xor_pd(input.xy, signs), _mm_xor_pd(input.zw, signs) };
+#else
 		return vector_to_quat(vector_mul(quat_to_vector(input), -1.0));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
