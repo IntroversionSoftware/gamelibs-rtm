@@ -284,7 +284,22 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalarf RTM_SIMD_CALL scalar_sqrt_reciprocal(scalarf_arg0 input) RTM_NO_EXCEPT
 	{
-		return scalarf{ _mm_div_ss(_mm_set_ps1(1.0F), _mm_sqrt_ss(input.value)) };
+		// Perform two passes of Newton-Raphson iteration on the hardware estimate
+		const __m128 half = _mm_set_ss(0.5F);
+		const __m128 input_half = _mm_mul_ss(input.value, half);
+		const __m128 x0 = _mm_rsqrt_ss(input.value);
+
+		// First iteration
+		__m128 x1 = _mm_mul_ss(x0, x0);
+		x1 = _mm_sub_ss(half, _mm_mul_ss(input_half, x1));
+		x1 = _mm_add_ss(_mm_mul_ss(x0, x1), x0);
+
+		// Second iteration
+		__m128 x2 = _mm_mul_ss(x1, x1);
+		x2 = _mm_sub_ss(half, _mm_mul_ss(input_half, x2));
+		x2 = _mm_add_ss(_mm_mul_ss(x1, x2), x1);
+
+		return scalarf{ x2 };
 	}
 #endif
 
@@ -293,12 +308,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE float RTM_SIMD_CALL scalar_sqrt_reciprocal(float input) RTM_NO_EXCEPT
 	{
-		// Performance note:
-		// With modern out-of-order executing processors, it is typically faster to use
-		// a full division/square root instead of a reciprocal estimate + Newton-Raphson iterations
-		// because the resulting code is more dense and is more likely to inline and
-		// as it uses fewer instructions.
+#if defined(RTM_SSE2_INTRINSICS)
+		return scalar_cast(scalar_sqrt_reciprocal(scalar_set(input)));
+#else
 		return 1.0F / scalar_sqrt(input);
+#endif
 	}
 
 #if defined(RTM_SSE2_INTRINSICS)
