@@ -559,8 +559,8 @@ namespace rtm
 		const __m128 lyrz_lxrz_lwrz_lzrz = _mm_mul_ps(r_zzzz, l_yxwz);
 		const __m128 result0 = _mm_add_ps(lxrw_lyrw_lzrw_lwrw, lwrx_nlzrx_lyrx_nlxrx);
 
-		const __m128 nlyrz_lxrz_lwrz_wlzrz = _mm_xor_ps(lyrz_lxrz_lwrz_lzrz, control_yxwz);
-		const __m128 result1 = _mm_add_ps(lzry_lwry_nlxry_nlyry, nlyrz_lxrz_lwrz_wlzrz);
+		const __m128 nlyrz_lxrz_lwrz_nlzrz = _mm_xor_ps(lyrz_lxrz_lwrz_lzrz, control_yxwz);
+		const __m128 result1 = _mm_add_ps(lzry_lwry_nlxry_nlyry, nlyrz_lxrz_lwrz_nlzrz);
 		return _mm_add_ps(result0, result1);
 #elif defined(RTM_NEON64_INTRINSICS)
 		// Use shuffles and negation instead of loading constants and doing mul/xor.
