@@ -1018,7 +1018,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store1(vector4f_arg0 input, float* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_ss(output, input);
+#else
 		output[0] = vector_get_x(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1026,8 +1030,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4f_arg0 input, float* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(rtm_impl::bit_cast<double*>(output), _mm_castps_pd(input));
+#else
 		output[0] = vector_get_x(input);
 		output[1] = vector_get_y(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1035,9 +1043,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4f_arg0 input, float* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(rtm_impl::bit_cast<double*>(output), _mm_castps_pd(input));
+		_mm_store_ss(output + 2, _mm_shuffle_ps(input, input, _MM_SHUFFLE(2, 2, 2, 2)));
+#else
 		output[0] = vector_get_x(input);
 		output[1] = vector_get_y(input);
 		output[2] = vector_get_z(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1045,7 +1058,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store(vector4f_arg0 input, uint8_t* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_ps(rtm_impl::bit_cast<float*>(output), input);
+#else
 		std::memcpy(output, &input, sizeof(vector4f));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1053,7 +1070,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store1(vector4f_arg0 input, uint8_t* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_ss(rtm_impl::bit_cast<float*>(output), input);
+#else
 		std::memcpy(output, &input, sizeof(float) * 1);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1061,7 +1082,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4f_arg0 input, uint8_t* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(rtm_impl::bit_cast<double*>(output), _mm_castps_pd(input));
+#else
 		std::memcpy(output, &input, sizeof(float) * 2);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1069,7 +1094,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4f_arg0 input, uint8_t* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(rtm_impl::bit_cast<double*>(output), _mm_castps_pd(input));
+		_mm_store_ss(rtm_impl::bit_cast<float*>(output) + 2, _mm_shuffle_ps(input, input, _MM_SHUFFLE(2, 2, 2, 2)));
+#else
 		std::memcpy(output, &input, sizeof(float) * 3);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1092,8 +1122,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4f_arg0 input, float2f* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(rtm_impl::bit_cast<double*>(&output->x), _mm_castps_pd(input));
+#else
 		output->x = vector_get_x(input);
 		output->y = vector_get_y(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1101,9 +1135,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4f_arg0 input, float3f* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(rtm_impl::bit_cast<double*>(&output->x), _mm_castps_pd(input));
+		_mm_store_ss(rtm_impl::bit_cast<float*>(&output->z), _mm_shuffle_ps(input, input, _MM_SHUFFLE(2, 2, 2, 2)));
+#else
 		output->x = vector_get_x(input);
 		output->y = vector_get_y(input);
 		output->z = vector_get_z(input);
+#endif
 	}
 
 
