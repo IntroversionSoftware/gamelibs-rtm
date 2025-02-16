@@ -52,7 +52,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_load(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return quatd{ _mm_loadu_pd(input), _mm_loadu_pd(input + 2) };
+#else
 		return quat_set(input[0], input[1], input[2], input[3]);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -60,7 +64,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_load(const float4d* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return quatd{ _mm_loadu_pd(&input->x), _mm_loadu_pd(&input->z) };
+#else
 		return quat_set(input->x, input->y, input->z, input->w);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
