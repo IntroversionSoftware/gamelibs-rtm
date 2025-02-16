@@ -153,7 +153,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator double() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE2_INTRINSICS)
-				return _mm_cvtsd_f64(_mm_shuffle_pd(input.xy, input.xy, 1));
+				return _mm_cvtsd_f64(_mm_shuffle_pd(input.xy, input.xy, _MM_SHUFFLE2(0, 1)));
 #else
 				return input.y;
 #endif
@@ -163,7 +163,7 @@ namespace rtm
 			RTM_DEPRECATED("Use 'as_scalar' suffix instead. To be removed in 2.4.")
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalard() const RTM_NO_EXCEPT
 			{
-				return scalard{ _mm_shuffle_pd(input.xy, input.xy, 1) };
+				return scalard{ _mm_shuffle_pd(input.xy, input.xy, _MM_SHUFFLE2(0, 1)) };
 			}
 #endif
 
@@ -185,7 +185,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalard RTM_SIMD_CALL quat_get_y_as_scalar(quatd_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return scalard{ _mm_shuffle_pd(input.xy, input.xy, 1) };
+		return scalard{ _mm_shuffle_pd(input.xy, input.xy, _MM_SHUFFLE2(0, 1)) };
 #else
 		return quat_get_y(input);
 #endif
@@ -255,7 +255,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator double() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE2_INTRINSICS)
-				return _mm_cvtsd_f64(_mm_shuffle_pd(input.zw, input.zw, 1));
+				return _mm_cvtsd_f64(_mm_shuffle_pd(input.zw, input.zw, _MM_SHUFFLE2(0, 1)));
 #else
 				return input.w;
 #endif
@@ -265,7 +265,7 @@ namespace rtm
 			RTM_DEPRECATED("Use 'as_scalar' suffix instead. To be removed in 2.4.")
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalard() const RTM_NO_EXCEPT
 			{
-				return scalard{ _mm_shuffle_pd(input.zw, input.zw, 1) };
+				return scalard{ _mm_shuffle_pd(input.zw, input.zw, _MM_SHUFFLE2(0, 1)) };
 			}
 #endif
 
@@ -287,7 +287,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalard RTM_SIMD_CALL quat_get_w_as_scalar(quatd_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return scalard{ _mm_shuffle_pd(input.zw, input.zw, 1) };
+		return scalard{ _mm_shuffle_pd(input.zw, input.zw, _MM_SHUFFLE2(0, 1)) };
 #else
 		return quat_get_w(input);
 #endif
@@ -321,7 +321,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_set_y(quatd_arg0 input, double lane_value) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return quatd{ _mm_shuffle_pd(input.xy, _mm_set_sd(lane_value), 0), input.zw };
+		return quatd{ _mm_shuffle_pd(input.xy, _mm_set_sd(lane_value), _MM_SHUFFLE2(0, 0)), input.zw };
 #else
 		return quatd{ input.x, lane_value, input.z, input.w };
 #endif
@@ -333,7 +333,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_set_y(quatd_arg0 input, scalard_arg2 lane_value) RTM_NO_EXCEPT
 	{
-		return quatd{ _mm_shuffle_pd(input.xy, lane_value.value, 0), input.zw };
+		return quatd{ _mm_shuffle_pd(input.xy, lane_value.value, _MM_SHUFFLE2(0, 0)), input.zw };
 	}
 #endif
 
@@ -365,7 +365,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_set_w(quatd_arg0 input, double lane_value) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return quatd{ input.xy, _mm_shuffle_pd(input.zw, _mm_set_sd(lane_value), 0) };
+		return quatd{ input.xy, _mm_shuffle_pd(input.zw, _mm_set_sd(lane_value), _MM_SHUFFLE2(0, 0)) };
 #else
 		return quatd{ input.x, input.y, input.z, lane_value };
 #endif
@@ -377,7 +377,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatd RTM_SIMD_CALL quat_set_w(quatd_arg0 input, scalard_arg2 lane_value) RTM_NO_EXCEPT
 	{
-		return quatd{ input.xy, _mm_shuffle_pd(input.zw, lane_value.value, 0) };
+		return quatd{ input.xy, _mm_shuffle_pd(input.zw, lane_value.value, _MM_SHUFFLE2(0, 0)) };
 	}
 #endif
 
