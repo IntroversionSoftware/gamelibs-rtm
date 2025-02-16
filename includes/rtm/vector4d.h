@@ -52,7 +52,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return vector4d{ _mm_loadu_pd(input), _mm_loadu_pd(input + 2) };
+#else
 		return vector_set(input[0], input[1], input[2], input[3]);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -60,7 +64,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load1(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d zero = _mm_setzero_pd();
+		return vector4d{ _mm_loadl_pd(zero, input), zero };
+#else
 		return vector_set(input[0], 0.0, 0.0, 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -68,7 +77,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load2(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return vector4d{ _mm_loadu_pd(input), _mm_setzero_pd() };
+#else
 		return vector_set(input[0], input[1], 0.0, 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -76,7 +89,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load3(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d zero = _mm_setzero_pd();
+		return vector4d{ _mm_loadu_pd(input), _mm_loadl_pd(zero, input + 2) };
+#else
 		return vector_set(input[0], input[1], input[2], 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -84,7 +102,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load(const float4d* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return vector4d{ _mm_loadu_pd(&input->x), _mm_loadu_pd(&input->z) };
+#else
 		return vector_set(input->x, input->y, input->z, input->w);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -92,7 +114,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load2(const float2d* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return vector4d{ _mm_loadu_pd(&input->x), _mm_setzero_pd() };
+#else
 		return vector_set(input->x, input->y, 0.0, 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -100,7 +126,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load3(const float3d* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d zero = _mm_setzero_pd();
+		return vector4d{ _mm_loadu_pd(&input->x), _mm_loadl_pd(zero, &input->z) };
+#else
 		return vector_set(input->x, input->y, input->z, 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -206,7 +237,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator double() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE2_INTRINSICS)
-				return _mm_cvtsd_f64(_mm_shuffle_pd(input.xy, input.xy, 1));
+				return _mm_cvtsd_f64(_mm_shuffle_pd(input.xy, input.xy, _MM_SHUFFLE2(0, 1)));
 #else
 				return input.y;
 #endif
@@ -216,7 +247,7 @@ namespace rtm
 			RTM_DEPRECATED("Use 'as_scalar' suffix instead. To be removed in 2.4.")
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalard() const RTM_NO_EXCEPT
 			{
-				return scalard{ _mm_shuffle_pd(input.xy, input.xy, 1) };
+				return scalard{ _mm_shuffle_pd(input.xy, input.xy, _MM_SHUFFLE2(0, 1)) };
 			}
 #endif
 
@@ -238,7 +269,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalard RTM_SIMD_CALL vector_get_y_as_scalar(vector4d_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return scalard{ _mm_shuffle_pd(input.xy, input.xy, 1) };
+		return scalard{ _mm_shuffle_pd(input.xy, input.xy, _MM_SHUFFLE2(0, 1)) };
 #else
 		return vector_get_y(input);
 #endif
@@ -308,7 +339,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator double() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE2_INTRINSICS)
-				return _mm_cvtsd_f64(_mm_shuffle_pd(input.zw, input.zw, 1));
+				return _mm_cvtsd_f64(_mm_shuffle_pd(input.zw, input.zw, _MM_SHUFFLE2(0, 1)));
 #else
 				return input.w;
 #endif
@@ -318,7 +349,7 @@ namespace rtm
 			RTM_DEPRECATED("Use 'as_scalar' suffix instead. To be removed in 2.4.")
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalard() const RTM_NO_EXCEPT
 			{
-				return scalard{ _mm_shuffle_pd(input.zw, input.zw, 1) };
+				return scalard{ _mm_shuffle_pd(input.zw, input.zw, _MM_SHUFFLE2(0, 1)) };
 			}
 #endif
 
@@ -340,7 +371,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalard RTM_SIMD_CALL vector_get_w_as_scalar(vector4d_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return scalard{ _mm_shuffle_pd(input.zw, input.zw, 1) };
+		return scalard{ _mm_shuffle_pd(input.zw, input.zw, _MM_SHUFFLE2(0, 1)) };
 #else
 		return vector_get_w(input);
 #endif
@@ -584,7 +615,7 @@ namespace rtm
 	{
 #if defined(RTM_SSE2_INTRINSICS)
 		__m128d xz_yw = _mm_min_pd(input.xy, input.zw);
-		__m128d yw_yw = _mm_shuffle_pd(xz_yw, xz_yw, 1);
+		__m128d yw_yw = _mm_shuffle_pd(xz_yw, xz_yw, _MM_SHUFFLE2(0, 1));
 		return scalard{ _mm_min_pd(xz_yw, yw_yw) };
 #else
 		return vector_get_min_component(input);
@@ -606,7 +637,7 @@ namespace rtm
 	{
 #if defined(RTM_SSE2_INTRINSICS)
 		__m128d xz_yw = _mm_max_pd(input.xy, input.zw);
-		__m128d yw_yw = _mm_shuffle_pd(xz_yw, xz_yw, 1);
+		__m128d yw_yw = _mm_shuffle_pd(xz_yw, xz_yw, _MM_SHUFFLE2(0, 1));
 		return scalard{ _mm_max_pd(xz_yw, yw_yw) };
 #else
 		return vector_get_max_component(input);
@@ -641,7 +672,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_set_y(vector4d_arg0 input, double lane_value) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return vector4d{ _mm_shuffle_pd(input.xy, _mm_set_sd(lane_value), 0), input.zw };
+		return vector4d{ _mm_shuffle_pd(input.xy, _mm_set_sd(lane_value), _MM_SHUFFLE2(0, 0)), input.zw };
 #else
 		return vector4d{ input.x, lane_value, input.z, input.w };
 #endif
@@ -653,7 +684,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_set_y(vector4d_arg0 input, scalard_arg2 lane_value) RTM_NO_EXCEPT
 	{
-		return vector4d{ _mm_shuffle_pd(input.xy, lane_value.value, 0), input.zw };
+		return vector4d{ _mm_shuffle_pd(input.xy, lane_value.value, _MM_SHUFFLE2(0, 0)), input.zw };
 	}
 #endif
 
@@ -685,7 +716,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_set_w(vector4d_arg0 input, double lane_value) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return vector4d{ input.xy, _mm_shuffle_pd(input.zw, _mm_set_sd(lane_value), 0) };
+		return vector4d{ input.xy, _mm_shuffle_pd(input.zw, _mm_set_sd(lane_value), _MM_SHUFFLE2(0, 0)) };
 #else
 		return vector4d{ input.x, input.y, input.z, lane_value };
 #endif
@@ -697,7 +728,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_set_w(vector4d_arg0 input, scalard_arg2 lane_value) RTM_NO_EXCEPT
 	{
-		return vector4d{ input.xy, _mm_shuffle_pd(input.zw, lane_value.value, 0) };
+		return vector4d{ input.xy, _mm_shuffle_pd(input.zw, lane_value.value, _MM_SHUFFLE2(0, 0)) };
 	}
 #endif
 
@@ -900,10 +931,15 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store(vector4d_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(output, input.xy);
+		_mm_storeu_pd(output + 2, input.zw);
+#else
 		output[0] = vector_get_x(input);
 		output[1] = vector_get_y(input);
 		output[2] = vector_get_z(input);
 		output[3] = vector_get_w(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -911,7 +947,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store1(vector4d_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(output, input.xy);
+#else
 		output[0] = vector_get_x(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -919,8 +959,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4d_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(output, input.xy);
+#else
 		output[0] = vector_get_x(input);
 		output[1] = vector_get_y(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -928,9 +972,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4d_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(output, input.xy);
+		_mm_store_sd(output + 2, input.zw);
+#else
 		output[0] = vector_get_x(input);
 		output[1] = vector_get_y(input);
 		output[2] = vector_get_z(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -938,7 +987,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store(vector4d_arg0 input, uint8_t* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(rtm_impl::bit_cast<double*>(output), input.xy);
+		_mm_storeu_pd(rtm_impl::bit_cast<double*>(output) + 2, input.zw);
+#else
 		std::memcpy(output, &input, sizeof(vector4d));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -946,7 +1000,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store1(vector4d_arg0 input, uint8_t* output)
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(rtm_impl::bit_cast<double*>(output), input.xy);
+#else
 		std::memcpy(output, &input, sizeof(double) * 1);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -954,7 +1012,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4d_arg0 input, uint8_t* output)
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(rtm_impl::bit_cast<double*>(output), input.xy);
+#else
 		std::memcpy(output, &input, sizeof(double) * 2);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -962,7 +1024,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4d_arg0 input, uint8_t* output)
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(rtm_impl::bit_cast<double*>(output), input.xy);
+		_mm_store_sd(rtm_impl::bit_cast<double*>(output) + 2, input.zw);
+#else
 		std::memcpy(output, &input, sizeof(double) * 3);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -970,10 +1037,15 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store(vector4d_arg0 input, float4d* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(&output->x, input.xy);
+		_mm_storeu_pd(&output->z, input.zw);
+#else
 		output->x = vector_get_x(input);
 		output->y = vector_get_y(input);
 		output->z = vector_get_z(input);
 		output->w = vector_get_w(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -981,8 +1053,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4d_arg0 input, float2d* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(&output->x, input.xy);
+#else
 		output->x = vector_get_x(input);
 		output->y = vector_get_y(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -990,9 +1066,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4d_arg0 input, float3d* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(&output->x, input.xy);
+		_mm_store_sd(&output->z, input.zw);
+#else
 		output->x = vector_get_x(input);
 		output->y = vector_get_y(input);
 		output->z = vector_get_z(input);
+#endif
 	}
 
 
@@ -1052,7 +1133,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_mul(vector4d_arg0 lhs, scalard_arg2 rhs) RTM_NO_EXCEPT
 	{
-		const __m128d rhs_xx = _mm_shuffle_pd(rhs.value, rhs.value, 0);
+		const __m128d rhs_xx = _mm_shuffle_pd(rhs.value, rhs.value, _MM_SHUFFLE2(0, 0));
 		return vector4d{ _mm_mul_pd(lhs.xy, rhs_xx), _mm_mul_pd(lhs.zw, rhs_xx) };
 	}
 #endif
@@ -1107,8 +1188,8 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_abs(vector4d_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		vector4d zero{ _mm_setzero_pd(), _mm_setzero_pd() };
-		return vector_max(vector_sub(zero, input), input);
+		const __m128d abs_mask = _mm_castsi128_pd(_mm_set_epi64x(0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL));
+		return vector4d{ _mm_and_pd(input.xy, abs_mask), _mm_and_pd(input.zw, abs_mask) };
 #else
 		return vector_set(scalar_abs(input.x), scalar_abs(input.y), scalar_abs(input.z), scalar_abs(input.w));
 #endif
@@ -1119,7 +1200,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_neg(vector4d_arg0 input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		constexpr __m128d signs = RTM_VECTOR2D_MAKE(-0.0, -0.0);
+		return vector4d{ _mm_xor_pd(input.xy, signs), _mm_xor_pd(input.zw, signs) };
+#else
 		return vector_mul(input, -1.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1304,6 +1390,21 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_cross3(vector4d_arg0 lhs, vector4d_arg1 rhs) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		// cross(a, b).zxy = (a * b.yzx) - (a.yzx * b)
+		__m128d lhs_yz = _mm_shuffle_pd(lhs.xy, lhs.zw, _MM_SHUFFLE2(0, 1));
+		__m128d lhs_xy = lhs.xy;
+		__m128d rhs_yz = _mm_shuffle_pd(rhs.xy, rhs.zw, _MM_SHUFFLE2(0, 1));
+		__m128d rhs_xy = rhs.xy;
+
+		__m128d tmp_zx = _mm_sub_pd(_mm_mul_pd(lhs_xy, rhs_yz), _mm_mul_pd(lhs_yz, rhs_xy));
+		__m128d tmp_y = _mm_sub_pd(_mm_mul_pd(lhs.zw, rhs_xy), _mm_mul_pd(lhs_xy, rhs.zw));
+
+		// cross(a, b) = ((a * b.yzx) - (a.yzx * b)).yzx
+		__m128d result_xy = _mm_shuffle_pd(tmp_zx, tmp_y, _MM_SHUFFLE2(0, 1));
+		__m128d result_z = tmp_zx;
+		return vector4d{ result_xy, result_z };
+#else
 		// cross(a, b) = (a.yzx * b.zxy) - (a.zxy * b.yzx)
 		const double lhs_x = vector_get_x(lhs);
 		const double lhs_y = vector_get_y(lhs);
@@ -1312,6 +1413,7 @@ namespace rtm
 		const double rhs_y = vector_get_y(rhs);
 		const double rhs_z = vector_get_z(rhs);
 		return vector_set((lhs_y * rhs_z) - (lhs_z * rhs_y), (lhs_z * rhs_x) - (lhs_x * rhs_z), (lhs_x * rhs_y) - (lhs_y * rhs_x));
+#endif
 	}
 
 	namespace rtm_impl
@@ -1326,6 +1428,14 @@ namespace rtm
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator double() const RTM_NO_EXCEPT
 			{
+#if defined(RTM_SSE2_INTRINSICS)
+				const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+				const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+				const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+				const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+				const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+				return _mm_cvtsd_f64(x2y2z2w2);
+#else
 				const scalard lhs_x = vector_get_x_as_scalar(lhs);
 				const scalard lhs_y = vector_get_y_as_scalar(lhs);
 				const scalard lhs_z = vector_get_z_as_scalar(lhs);
@@ -1339,25 +1449,19 @@ namespace rtm
 				const scalard zz = scalar_mul(lhs_z, rhs_z);
 				const scalard ww = scalar_mul(lhs_w, rhs_w);
 				return scalar_cast(scalar_add(scalar_add(xx, yy), scalar_add(zz, ww)));
+#endif
 			}
 
 #if defined(RTM_SSE2_INTRINSICS)
 			RTM_DEPRECATED("Use 'as_scalar' suffix instead. To be removed in 2.4.")
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalard() const RTM_NO_EXCEPT
 			{
-				const scalard lhs_x = vector_get_x_as_scalar(lhs);
-				const scalard lhs_y = vector_get_y_as_scalar(lhs);
-				const scalard lhs_z = vector_get_z_as_scalar(lhs);
-				const scalard lhs_w = vector_get_w_as_scalar(lhs);
-				const scalard rhs_x = vector_get_x_as_scalar(rhs);
-				const scalard rhs_y = vector_get_y_as_scalar(rhs);
-				const scalard rhs_z = vector_get_z_as_scalar(rhs);
-				const scalard rhs_w = vector_get_w_as_scalar(rhs);
-				const scalard xx = scalar_mul(lhs_x, rhs_x);
-				const scalard yy = scalar_mul(lhs_y, rhs_y);
-				const scalard zz = scalar_mul(lhs_z, rhs_z);
-				const scalard ww = scalar_mul(lhs_w, rhs_w);
-				return scalar_add(scalar_add(xx, yy), scalar_add(zz, ww));
+				const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+				const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+				const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+				const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+				const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+				return scalard{ x2y2z2w2 };
 			}
 #endif
 
@@ -1386,6 +1490,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalard RTM_SIMD_CALL vector_dot_as_scalar(vector4d_arg0 lhs, vector4d_arg1 rhs) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+		const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+		const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+		const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+		const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+		return scalard{ x2y2z2w2 };
+#else
 		const scalard lhs_x = vector_get_x_as_scalar(lhs);
 		const scalard lhs_y = vector_get_y_as_scalar(lhs);
 		const scalard lhs_z = vector_get_z_as_scalar(lhs);
@@ -1399,6 +1511,7 @@ namespace rtm
 		const scalard zz = scalar_mul(lhs_z, rhs_z);
 		const scalard ww = scalar_mul(lhs_w, rhs_w);
 		return scalar_add(scalar_add(xx, yy), scalar_add(zz, ww));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1423,7 +1536,7 @@ namespace rtm
 			{
 #if defined(RTM_SSE2_INTRINSICS)
 				__m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
-				__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, 1);
+				__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, _MM_SHUFFLE2(0, 1));
 				return _mm_cvtsd_f64(_mm_add_sd(x2_y2, y2));
 #else
 				return (vector_get_x(lhs) * vector_get_x(rhs)) + (vector_get_y(lhs) * vector_get_y(rhs));
@@ -1435,7 +1548,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalard() const RTM_NO_EXCEPT
 			{
 				__m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
-				__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, 1);
+				__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, _MM_SHUFFLE2(0, 1));
 				return scalard{ _mm_add_sd(x2_y2, y2) };
 			}
 #endif
@@ -1467,7 +1580,7 @@ namespace rtm
 	{
 #if defined(RTM_SSE2_INTRINSICS)
 		__m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
-		__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, 1);
+		__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, _MM_SHUFFLE2(0, 1));
 		return scalard{ _mm_add_sd(x2_y2, y2) };
 #else
 		return vector_dot2(lhs, rhs);
@@ -1497,7 +1610,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 				__m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
 				__m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
-				__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, 1);
+				__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, _MM_SHUFFLE2(0, 1));
 				__m128d x2y2 = _mm_add_sd(x2_y2, y2);
 				return _mm_cvtsd_f64(_mm_add_sd(x2y2, z2_w2));
 #else
@@ -1511,7 +1624,7 @@ namespace rtm
 			{
 				__m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
 				__m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
-				__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, 1);
+				__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, _MM_SHUFFLE2(0, 1));
 				__m128d x2y2 = _mm_add_sd(x2_y2, y2);
 				return scalard{ _mm_add_sd(x2y2, z2_w2) };
 			}
@@ -1545,7 +1658,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		__m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
 		__m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
-		__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, 1);
+		__m128d y2 = _mm_shuffle_pd(x2_y2, x2_y2, _MM_SHUFFLE2(0, 1));
 		__m128d x2y2 = _mm_add_sd(x2_y2, y2);
 		return scalard{ _mm_add_sd(x2y2, z2_w2) };
 #else
@@ -2953,8 +3066,18 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_sign(vector4d_arg0 input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d signs = _mm_set1_pd(-0.0);
+		const __m128d one = _mm_set1_pd(1.0);
+		// Mask out the sign bit
+		const __m128d sign_bits_xy = _mm_and_pd(input.xy, signs);
+		const __m128d sign_bits_zw = _mm_and_pd(input.zw, signs);
+		// Copy the sign bit onto +-1.0f
+		return vector4d{ _mm_or_pd(sign_bits_xy, one), _mm_or_pd(sign_bits_zw, one) };
+#else
 		const mask4d mask = vector_greater_equal(input, vector_zero());
 		return vector_select(mask, vector_set(1.0), vector_set(-1.0));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////

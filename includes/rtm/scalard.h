@@ -269,7 +269,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE double RTM_SIMD_CALL scalar_sqrt(double input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d input_v = _mm_set1_pd(input);
+		return _mm_cvtsd_f64(_mm_sqrt_sd(input_v, input_v));
+#else
 		return std::sqrt(input);
+#endif
 	}
 
 #if defined(RTM_SSE2_INTRINSICS)
@@ -289,7 +294,13 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE double RTM_SIMD_CALL scalar_sqrt_reciprocal(double input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d input_v = _mm_set1_pd(input);
+		const __m128d input_sqrt = _mm_sqrt_sd(input_v, input_v);
+		return _mm_cvtsd_f64(_mm_div_sd(_mm_set_sd(1.0), input_sqrt));
+#else
 		return 1.0 / scalar_sqrt(input);
+#endif
 	}
 
 #if defined(RTM_SSE2_INTRINSICS)
