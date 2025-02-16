@@ -52,7 +52,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return vector4d{ _mm_loadu_pd(input), _mm_loadu_pd(input + 2) };
+#else
 		return vector_set(input[0], input[1], input[2], input[3]);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -60,7 +64,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load1(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d zero = _mm_setzero_pd();
+		return vector4d{ _mm_loadl_pd(zero, input), zero };
+#else
 		return vector_set(input[0], 0.0, 0.0, 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -68,7 +77,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load2(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return vector4d{ _mm_loadu_pd(input), _mm_setzero_pd() };
+#else
 		return vector_set(input[0], input[1], 0.0, 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -76,7 +89,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load3(const double* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d zero = _mm_setzero_pd();
+		return vector4d{ _mm_loadu_pd(input), _mm_loadl_pd(zero, input + 2) };
+#else
 		return vector_set(input[0], input[1], input[2], 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -84,7 +102,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load(const float4d* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return vector4d{ _mm_loadu_pd(&input->x), _mm_loadu_pd(&input->z) };
+#else
 		return vector_set(input->x, input->y, input->z, input->w);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -92,7 +114,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load2(const float2d* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return vector4d{ _mm_loadu_pd(&input->x), _mm_setzero_pd() };
+#else
 		return vector_set(input->x, input->y, 0.0, 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -100,7 +126,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_load3(const float3d* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d zero = _mm_setzero_pd();
+		return vector4d{ _mm_loadu_pd(&input->x), _mm_loadl_pd(zero, &input->z) };
+#else
 		return vector_set(input->x, input->y, input->z, 0.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -900,10 +931,15 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store(vector4d_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(output, input.xy);
+		_mm_storeu_pd(output + 2, input.zw);
+#else
 		output[0] = vector_get_x(input);
 		output[1] = vector_get_y(input);
 		output[2] = vector_get_z(input);
 		output[3] = vector_get_w(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -911,7 +947,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store1(vector4d_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(output, input.xy);
+#else
 		output[0] = vector_get_x(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -919,8 +959,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4d_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(output, input.xy);
+#else
 		output[0] = vector_get_x(input);
 		output[1] = vector_get_y(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -928,9 +972,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4d_arg0 input, double* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(output, input.xy);
+		_mm_store_sd(output + 2, input.zw);
+#else
 		output[0] = vector_get_x(input);
 		output[1] = vector_get_y(input);
 		output[2] = vector_get_z(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -938,7 +987,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store(vector4d_arg0 input, uint8_t* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(rtm_impl::bit_cast<double*>(output), input.xy);
+		_mm_storeu_pd(rtm_impl::bit_cast<double*>(output) + 2, input.zw);
+#else
 		std::memcpy(output, &input, sizeof(vector4d));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -946,7 +1000,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store1(vector4d_arg0 input, uint8_t* output)
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_store_sd(rtm_impl::bit_cast<double*>(output), input.xy);
+#else
 		std::memcpy(output, &input, sizeof(double) * 1);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -954,7 +1012,11 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4d_arg0 input, uint8_t* output)
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(rtm_impl::bit_cast<double*>(output), input.xy);
+#else
 		std::memcpy(output, &input, sizeof(double) * 2);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -962,7 +1024,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4d_arg0 input, uint8_t* output)
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(rtm_impl::bit_cast<double*>(output), input.xy);
+		_mm_store_sd(rtm_impl::bit_cast<double*>(output) + 2, input.zw);
+#else
 		std::memcpy(output, &input, sizeof(double) * 3);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -970,10 +1037,15 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store(vector4d_arg0 input, float4d* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(&output->x, input.xy);
+		_mm_storeu_pd(&output->z, input.zw);
+#else
 		output->x = vector_get_x(input);
 		output->y = vector_get_y(input);
 		output->z = vector_get_z(input);
 		output->w = vector_get_w(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -981,8 +1053,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store2(vector4d_arg0 input, float2d* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(&output->x, input.xy);
+#else
 		output->x = vector_get_x(input);
 		output->y = vector_get_y(input);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -990,9 +1066,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE void RTM_SIMD_CALL vector_store3(vector4d_arg0 input, float3d* output) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		_mm_storeu_pd(&output->x, input.xy);
+		_mm_store_sd(&output->z, input.zw);
+#else
 		output->x = vector_get_x(input);
 		output->y = vector_get_y(input);
 		output->z = vector_get_z(input);
+#endif
 	}
 
 
