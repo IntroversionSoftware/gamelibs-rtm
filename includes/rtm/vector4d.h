@@ -1188,8 +1188,8 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_abs(vector4d_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		vector4d zero{ _mm_setzero_pd(), _mm_setzero_pd() };
-		return vector_max(vector_sub(zero, input), input);
+		const __m128d abs_mask = _mm_castsi128_ps(_mm_set_epi64x(0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL));
+		return vector4d{ _mm_and_pd(input.xy, abs_mask), _mm_and_pd(input.zw, abs_mask) };
 #else
 		return vector_set(scalar_abs(input.x), scalar_abs(input.y), scalar_abs(input.z), scalar_abs(input.w));
 #endif
@@ -1200,7 +1200,12 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_neg(vector4d_arg0 input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		constexpr __m128d signs = RTM_VECTOR2D_MAKE(-0.0, -0.0);
+		return vector4d{ _mm_xor_pd(input.xy, signs), _mm_xor_pd(input.zw, signs) };
+#else
 		return vector_mul(input, -1.0);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1385,6 +1390,21 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_cross3(vector4d_arg0 lhs, vector4d_arg1 rhs) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		// cross(a, b).zxy = (a * b.yzx) - (a.yzx * b)
+		__m128d lhs_yz = _mm_shuffle_pd(lhs.xy, lhs.zw, _MM_SHUFFLE2(0, 1));
+		__m128d lhs_xy = lhs.xy;
+		__m128d rhs_yz = _mm_shuffle_pd(rhs.xy, rhs.zw, _MM_SHUFFLE2(0, 1));
+		__m128d rhs_xy = rhs.xy;
+
+		__m128d tmp_zx = _mm_sub_pd(_mm_mul_pd(lhs_xy, rhs_yz), _mm_mul_pd(lhs_yz, rhs_xy));
+		__m128d tmp_y = _mm_sub_pd(_mm_mul_pd(lhs.zw, rhs_xy), _mm_mul_pd(lhs_xy, rhs.zw));
+
+		// cross(a, b) = ((a * b.yzx) - (a.yzx * b)).yzx
+		__m128d result_xy = _mm_shuffle_pd(tmp_zx, tmp_y, _MM_SHUFFLE2(0, 1));
+		__m128d result_z = tmp_zx;
+		return vector4d{ result_xy, result_z };
+#else
 		// cross(a, b) = (a.yzx * b.zxy) - (a.zxy * b.yzx)
 		const double lhs_x = vector_get_x(lhs);
 		const double lhs_y = vector_get_y(lhs);
@@ -1393,6 +1413,7 @@ namespace rtm
 		const double rhs_y = vector_get_y(rhs);
 		const double rhs_z = vector_get_z(rhs);
 		return vector_set((lhs_y * rhs_z) - (lhs_z * rhs_y), (lhs_z * rhs_x) - (lhs_x * rhs_z), (lhs_x * rhs_y) - (lhs_y * rhs_x));
+#endif
 	}
 
 	namespace rtm_impl
@@ -1407,6 +1428,14 @@ namespace rtm
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator double() const RTM_NO_EXCEPT
 			{
+#if defined(RTM_SSE2_INTRINSICS)
+				const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+				const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+				const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+				const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+				const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+				return _mm_cvtsd_f64(x2y2z2w2);
+#else
 				const scalard lhs_x = vector_get_x_as_scalar(lhs);
 				const scalard lhs_y = vector_get_y_as_scalar(lhs);
 				const scalard lhs_z = vector_get_z_as_scalar(lhs);
@@ -1420,25 +1449,19 @@ namespace rtm
 				const scalard zz = scalar_mul(lhs_z, rhs_z);
 				const scalard ww = scalar_mul(lhs_w, rhs_w);
 				return scalar_cast(scalar_add(scalar_add(xx, yy), scalar_add(zz, ww)));
+#endif
 			}
 
 #if defined(RTM_SSE2_INTRINSICS)
 			RTM_DEPRECATED("Use 'as_scalar' suffix instead. To be removed in 2.4.")
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalard() const RTM_NO_EXCEPT
 			{
-				const scalard lhs_x = vector_get_x_as_scalar(lhs);
-				const scalard lhs_y = vector_get_y_as_scalar(lhs);
-				const scalard lhs_z = vector_get_z_as_scalar(lhs);
-				const scalard lhs_w = vector_get_w_as_scalar(lhs);
-				const scalard rhs_x = vector_get_x_as_scalar(rhs);
-				const scalard rhs_y = vector_get_y_as_scalar(rhs);
-				const scalard rhs_z = vector_get_z_as_scalar(rhs);
-				const scalard rhs_w = vector_get_w_as_scalar(rhs);
-				const scalard xx = scalar_mul(lhs_x, rhs_x);
-				const scalard yy = scalar_mul(lhs_y, rhs_y);
-				const scalard zz = scalar_mul(lhs_z, rhs_z);
-				const scalard ww = scalar_mul(lhs_w, rhs_w);
-				return scalar_add(scalar_add(xx, yy), scalar_add(zz, ww));
+				const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+				const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+				const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+				const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+				const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+				return scalard{ x2y2z2w2 };
 			}
 #endif
 
@@ -1467,6 +1490,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalard RTM_SIMD_CALL vector_dot_as_scalar(vector4d_arg0 lhs, vector4d_arg1 rhs) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d x2_y2 = _mm_mul_pd(lhs.xy, rhs.xy);
+		const __m128d z2_w2 = _mm_mul_pd(lhs.zw, rhs.zw);
+		const __m128d x2z2_y2w2 = _mm_add_pd(x2_y2, z2_w2);
+		const __m128d y2w2 = _mm_shuffle_pd(x2z2_y2w2, x2z2_y2w2, _MM_SHUFFLE2(1, 1));
+		const __m128d x2y2z2w2 = _mm_add_pd(x2z2_y2w2, y2w2);
+		return scalard{ x2y2z2w2 };
+#else
 		const scalard lhs_x = vector_get_x_as_scalar(lhs);
 		const scalard lhs_y = vector_get_y_as_scalar(lhs);
 		const scalard lhs_z = vector_get_z_as_scalar(lhs);
@@ -1480,6 +1511,7 @@ namespace rtm
 		const scalard zz = scalar_mul(lhs_z, rhs_z);
 		const scalard ww = scalar_mul(lhs_w, rhs_w);
 		return scalar_add(scalar_add(xx, yy), scalar_add(zz, ww));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -3034,8 +3066,18 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_sign(vector4d_arg0 input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128d signs = _mm_set1_pd(-0.0);
+		const __m128d one = _mm_set1_pd(1.0);
+		// Mask out the sign bit
+		const __m128 sign_bits_xy = _mm_and_pd(input.xy, signs);
+		const __m128 sign_bits_zw = _mm_and_pd(input.zw, signs);
+		// Copy the sign bit onto +-1.0f
+		return vector4d{ _mm_or_pd(sign_bits_xy, one), _mm_or_pd(sign_bits_zw, one) };
+#else
 		const mask4d mask = vector_greater_equal(input, vector_zero());
 		return vector_select(mask, vector_set(1.0), vector_set(-1.0));
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
