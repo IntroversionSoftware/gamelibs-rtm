@@ -3070,8 +3070,8 @@ namespace rtm
 		const __m128d signs = _mm_set1_pd(-0.0);
 		const __m128d one = _mm_set1_pd(1.0);
 		// Mask out the sign bit
-		const __m128 sign_bits_xy = _mm_and_pd(input.xy, signs);
-		const __m128 sign_bits_zw = _mm_and_pd(input.zw, signs);
+		const __m128d sign_bits_xy = _mm_and_pd(input.xy, signs);
+		const __m128d sign_bits_zw = _mm_and_pd(input.zw, signs);
 		// Copy the sign bit onto +-1.0f
 		return vector4d{ _mm_or_pd(sign_bits_xy, one), _mm_or_pd(sign_bits_zw, one) };
 #else
