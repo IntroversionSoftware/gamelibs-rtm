@@ -3558,7 +3558,26 @@ namespace rtm
 	template<mix4 comp0, mix4 comp1, mix4 comp2, mix4 comp3>
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_mix(vector4f_arg0 input0, vector4f_arg1 input1) RTM_NO_EXCEPT
 	{
-#if defined(RTM_SSE4_INTRINSICS)
+		// Exactly input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return input0;
+
+		// Exactly input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return input1;
+
+#if defined(RTM_SSE2_INTRINSICS)
+	#if defined(RTM_AVX_INTRINSICS)
+		// TODO: AVX introduced the permute instruction (_mm_permute_ps) but on some AMD processors like Zen2
+		// the instruction has much higher latency and a lower reciprocal throughput which makes it a poor fit
+		// On the up side, it allows to load the input directly from memory in a single instruction
+		// but for a function like vector_mix, we cannot assume whether any input is in memory or register
+		// To make a smart choice for this, we would need to know at compile time what processor we are targeting
+		// and this is not available to us. For that reason, I have opted to not implement its support for the
+		// time being.
+	#endif // defined(RTM_AVX_INTRINSICS)
+
+	#if defined(RTM_SSE4_INTRINSICS)
         // Each component comes from the respective position of input 0 or input 1
         if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::x) && (comp1 == mix4::b || comp1 == mix4::y) &&
                                        (comp2 == mix4::c || comp2 == mix4::z) && (comp3 == mix4::d || comp3 == mix4::w)>::test())
@@ -3599,9 +3618,90 @@ namespace rtm
         // Fourth component comes from input 0, others come from the respective positions of input 1
         if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::c && rtm_impl::is_mix_xyzw(comp3)>::test())
             return _mm_insert_ps(input1, input0, ((int(comp3) % 4) << 6) | (3 << 4));
-#endif // defined(RTM_SSE4_INTRINSICS)
+	#endif // defined(RTM_SSE4_INTRINSICS)
 
-#if defined(RTM_SSE2_INTRINSICS)
+	#if defined(RTM_SSE3_INTRINSICS)
+		// Duplicate low elements of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::z && comp3 == mix4::z>::test())
+			return _mm_moveldup_ps(input0);
+
+		// Duplicate low elements of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::a && comp2 == mix4::c && comp3 == mix4::c>::test())
+			return _mm_moveldup_ps(input1);
+
+		// Duplicate high elements of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::y && comp2 == mix4::w && comp3 == mix4::w>::test())
+			return _mm_movehdup_ps(input0);
+
+		// Duplicate high elements of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::b && comp2 == mix4::d && comp3 == mix4::d>::test())
+			return _mm_movehdup_ps(input1);
+	#endif // defined(RTM_SSE3_INTRINSICS)
+
+		// Low words from both inputs are interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a && comp2 == mix4::y && comp3 == mix4::b>::test())
+			return _mm_unpacklo_ps(input0, input1);
+
+		// Low words from both inputs are interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::x && comp2 == mix4::b && comp3 == mix4::y>::test())
+			return _mm_unpacklo_ps(input1, input0);
+
+		// Low word from input 0 is interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::y && comp3 == mix4::y>::test())
+			return _mm_unpacklo_ps(input0, input0);
+
+		// Low word from input 1 is interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::a && comp2 == mix4::b && comp3 == mix4::b>::test())
+			return _mm_unpacklo_ps(input1, input1);
+
+		// High words from both inputs are interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::c && comp2 == mix4::w && comp3 == mix4::d>::test())
+			return _mm_unpackhi_ps(input0, input1);
+
+		// High words from both inputs are interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::z && comp2 == mix4::d && comp3 == mix4::w>::test())
+			return _mm_unpackhi_ps(input1, input0);
+
+		// High word from input 0 is interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::z && comp2 == mix4::w && comp3 == mix4::w>::test())
+			return _mm_unpackhi_ps(input0, input0);
+
+		// High word from input 1 is interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::c && comp2 == mix4::d && comp3 == mix4::d>::test())
+			return _mm_unpackhi_ps(input1, input1);
+
+		// Duplicate bottom half of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::x && comp3 == mix4::y>::test())
+			return _mm_movelh_ps(input0, input0);
+
+		// Duplicate bottom half of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::a && comp3 == mix4::b>::test())
+			return _mm_movelh_ps(input1, input1);
+
+		// Move bottom half of input 1 to top of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::a && comp3 == mix4::b>::test())
+			return _mm_movelh_ps(input0, input1);
+
+		// Move bottom half of input 0 to top of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::x && comp3 == mix4::y>::test())
+			return _mm_movelh_ps(input1, input0);
+
+		// Duplicate top half of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::w && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return _mm_movehl_ps(input0, input0);
+
+		// Duplicate top half of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::d && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return _mm_movehl_ps(input1, input1);
+
+		// Move top half of input 1 to top of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::w && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return _mm_movehl_ps(input1, input0);
+
+		// Move top half of input 0 to top of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::d && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return _mm_movehl_ps(input0, input1);
+
 		// All four components come from input 0
 		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
 			return _mm_shuffle_ps(input0, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, int(comp1) % 4, int(comp0) % 4));
@@ -3618,22 +3718,96 @@ namespace rtm
 		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
 			return _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, int(comp1) % 4, int(comp0) % 4));
 
-		// Low words from both inputs are interleaved
-		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a && comp2 == mix4::y && comp3 == mix4::b>::test())
-			return _mm_unpacklo_ps(input0, input1);
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 z0z0w1w1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(input0, z0z0w1w1, _MM_SHUFFLE(2, 0, int(comp1) % 4, int(comp0) % 4));
+		}
 
-		// Low words from both inputs are interleaved
-		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::x && comp2 == mix4::b && comp3 == mix4::y>::test())
-			return _mm_unpacklo_ps(input1, input0);
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 z1z1w0w0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(input0, z1z1w0w0, _MM_SHUFFLE(2, 0, int(comp1) % 4, int(comp0) % 4));
+		}
 
-		// High words from both inputs are interleaved
-		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::c && comp2 == mix4::w && comp3 == mix4::d>::test())
-			return _mm_unpackhi_ps(input0, input1);
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 x0x0y1y1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			return _mm_shuffle_ps(x0x0y1y1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, 2, 0));
+		}
 
-		// High words from both inputs are interleaved
-		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::z && comp2 == mix4::d && comp3 == mix4::w>::test())
-			return _mm_unpackhi_ps(input1, input0);
-#endif	// defined(RTM_SSE2_INTRINSICS)
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 x1x1y0y0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			return _mm_shuffle_ps(x1x1y0y0, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 z1z1w0w0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(input1, z1z1w0w0, _MM_SHUFFLE(2, 0, int(comp1) % 4, int(comp0) % 4));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 z0z0w1w1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(input1, z0z0w1w1, _MM_SHUFFLE(2, 0, int(comp1) % 4, int(comp0) % 4));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 x1x1y0y0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			return _mm_shuffle_ps(x1x1y0y0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 x0x0y1y1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			return _mm_shuffle_ps(x0x0y1y1, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 x0x0y1y1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			const __m128 z0z0w1w1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(x0x0y1y1, z0z0w1w1, _MM_SHUFFLE(2, 0, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 x1x1y0y0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			const __m128 z1z1w0w0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(x1x1y0y0, z1z1w0w0, _MM_SHUFFLE(2, 0, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 x0x0y1y1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			const __m128 z1z1w0w0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(x0x0y1y1, z1z1w0w0, _MM_SHUFFLE(2, 0, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 x1x1y0y0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			const __m128 z0z0w1w1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(x1x1y0y0, z0z0w1w1, _MM_SHUFFLE(2, 0, 2, 0));
+		}
+
+		// All vector_mix permutations are handled above
+#endif // defined(RTM_SSE2_INTRINSICS)
 
 #if defined(RTM_NEON64_INTRINSICS)
         // Low words from both inputs are interleaved
