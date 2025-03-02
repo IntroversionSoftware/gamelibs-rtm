@@ -3570,6 +3570,13 @@ namespace rtm
 		// Instruction costs taken from Agner's instruction tables
 		// Cost:	ops, latency, throughput, execution port
 
+	#if defined(RTM_COMPILER_CLANG) || defined(RTM_COMPILER_GCC)
+		#if __has_builtin(__builtin_shufflevector)
+			// GCC/Clang offer a builtin intrinsic to generate optimal assembly for this
+			return __builtin_shufflevector(input0, input1, int(comp0), int(comp1), int(comp2), int(comp3));
+		#endif
+	#endif
+
 	#if defined(RTM_AVX_INTRINSICS)
 		// TODO: AVX introduced the permute instruction (_mm_permute_ps) but on some AMD processors like Zen2
 		// the instruction has much higher latency and a lower reciprocal throughput which makes it a poor fit
@@ -3845,6 +3852,13 @@ namespace rtm
 
 		// All vector_mix permutations are handled above
 #elif defined(RTM_NEON_INTRINSICS)
+	#if defined(RTM_COMPILER_CLANG) || defined(RTM_COMPILER_GCC)
+		#if __has_builtin(__builtin_shufflevector)
+			// GCC/Clang offer a builtin intrinsic to generate optimal assembly for this
+			return __builtin_shufflevector(input0, input1, int(comp0), int(comp1), int(comp2), int(comp3));
+		#endif
+	#endif
+
 	#if defined(RTM_NEON64_INTRINSICS)
 		// Duplicate low words of input 0
 		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::y && comp3 == mix4::y>::test())
