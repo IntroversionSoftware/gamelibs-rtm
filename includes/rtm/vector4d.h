@@ -2941,7 +2941,666 @@ namespace rtm
 	template<mix4 comp0, mix4 comp1, mix4 comp2, mix4 comp3>
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_mix(vector4d_arg0 input0, vector4d_arg1 input1) RTM_NO_EXCEPT
 	{
-		// Slow code path, not yet optimized or not using intrinsics
+		// Exactly input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return input0;
+
+		// Exactly input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return input1;
+
+#if defined(RTM_SSE2_INTRINSICS)
+		// We do the same treatment for each half of the result pair
+
+		__m128d result_xy;
+		__m128d result_zw;
+
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y>::test())
+		{
+			result_xy = input0.xy;
+		}
+
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::w>::test())
+		{
+			result_xy = input0.zw;
+		}
+
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b>::test())
+		{
+			result_xy = input1.xy;
+		}
+
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::d>::test())
+		{
+			result_xy = input1.zw;
+		}
+
+	#if defined(RTM_SSE4_INTRINSICS)
+		// xy0 xy0	duplicate
+		// xy0 zw0
+		else if (rtm_impl::static_condition<(comp0 == mix4::x || comp0 == mix4::z) && (comp1 == mix4::y || comp1 == mix4::w)>::test())
+		{
+			constexpr int mask = (comp0 == mix4::z ? 1 : 0) | (comp1 == mix4::w ? 2 : 0);
+			result_xy = _mm_blend_pd(input0.xy, input0.zw, mask);
+		}
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<(comp0 == mix4::x || comp0 == mix4::a) && (comp1 == mix4::y || comp1 == mix4::b)>::test())
+		{
+			constexpr int mask = (comp0 == mix4::a ? 1 : 0) | (comp1 == mix4::b ? 2 : 0);
+			result_xy = _mm_blend_pd(input0.xy, input1.xy, mask);
+		}
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<(comp0 == mix4::x || comp0 == mix4::c) && (comp1 == mix4::y || comp1 == mix4::d)>::test())
+		{
+			constexpr int mask = (comp0 == mix4::c ? 1 : 0) | (comp1 == mix4::d ? 2 : 0);
+			result_xy = _mm_blend_pd(input0.xy, input1.zw, mask);
+		}
+
+		// xy1 xy0	duplicate
+		// xy1 zw0
+		else if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::z) && (comp1 == mix4::b || comp1 == mix4::w)>::test())
+		{
+			constexpr int mask = (comp0 == mix4::z ? 1 : 0) | (comp1 == mix4::w ? 2 : 0);
+			result_xy = _mm_blend_pd(input1.xy, input0.zw, mask);
+		}
+
+		// xy1 xy1	duplicate
+		// xy1 zw1
+		else if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::c) && (comp1 == mix4::b || comp1 == mix4::d)>::test())
+		{
+			constexpr int mask = (comp0 == mix4::c ? 1 : 0) | (comp1 == mix4::d ? 2 : 0);
+			result_xy = _mm_blend_pd(input1.xy, input1.zw, mask);
+		}
+	#endif // defined(RTM_SSE4_INTRINSICS)
+
+	#if defined(RTM_SSE3_INTRINSICS)
+		else if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x>::test())
+			result_xy = _mm_movedup_pd(input0.xy);
+
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::z>::test())
+			result_xy = _mm_movedup_pd(input0.zw);
+
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::a>::test())
+			result_xy = _mm_movedup_pd(input1.xy);
+
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::c>::test())
+			result_xy = _mm_movedup_pd(input1.zw);
+	#endif // defined(RTM_SSE3_INTRINSICS)
+
+		// xy0 xy0	duplicate
+		// xy0 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::y>::test())
+			result_xy = _mm_move_sd(input0.xy, input0.zw);
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::y>::test())
+			result_xy = _mm_move_sd(input0.xy, input1.xy);
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::y>::test())
+			result_xy = _mm_move_sd(input0.xy, input1.zw);
+
+		// xy1 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::b>::test())
+			result_xy = _mm_move_sd(input1.xy, input0.xy);
+
+		// xy1 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::b>::test())
+			result_xy = _mm_move_sd(input1.xy, input0.zw);
+
+		// xy1 xy1	duplicate
+		// xy1 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::b>::test())
+			result_xy = _mm_move_sd(input1.xy, input1.zw);
+
+		// zw0 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::w>::test())
+			result_xy = _mm_move_sd(input0.zw, input0.xy);
+
+		// zw0 zw0 duplicate
+		// zw0 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::w>::test())
+			result_xy = _mm_move_sd(input0.zw, input1.xy);
+
+		// zw0 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::w>::test())
+			result_xy = _mm_move_sd(input0.zw, input1.zw);
+
+		// zw1 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::d>::test())
+			result_xy = _mm_move_sd(input1.zw, input0.xy);
+
+		// zw1 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::d>::test())
+			result_xy = _mm_move_sd(input1.zw, input0.zw);
+
+		// zw1 xy1
+		// zw1 zw1 duplicate
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::d>::test())
+			result_xy = _mm_move_sd(input1.zw, input1.xy);
+
+		// xy0 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::y>::test())
+			result_xy = _mm_unpackhi_pd(input0.xy, input0.xy);
+
+		// xy0 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::w>::test())
+			result_xy = _mm_unpackhi_pd(input0.xy, input0.zw);
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::b>::test())
+			result_xy = _mm_unpackhi_pd(input0.xy, input1.xy);
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::d>::test())
+			result_xy = _mm_unpackhi_pd(input0.xy, input1.zw);
+
+		// xy1 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::y>::test())
+			result_xy = _mm_unpackhi_pd(input1.xy, input0.xy);
+
+		// xy1 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::w>::test())
+			result_xy = _mm_unpackhi_pd(input1.xy, input0.zw);
+
+		// xy1 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::b>::test())
+			result_xy = _mm_unpackhi_pd(input1.xy, input1.xy);
+
+		// xy1 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::d>::test())
+			result_xy = _mm_unpackhi_pd(input1.xy, input1.zw);
+
+		// zw0 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::w && comp1 == mix4::y>::test())
+			result_xy = _mm_unpackhi_pd(input0.zw, input0.xy);
+
+		// zw0 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::w && comp1 == mix4::w>::test())
+			result_xy = _mm_unpackhi_pd(input0.zw, input0.zw);
+
+		// zw0 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::w && comp1 == mix4::b>::test())
+			result_xy = _mm_unpackhi_pd(input0.zw, input1.xy);
+
+		// zw0 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::w && comp1 == mix4::d>::test())
+			result_xy = _mm_unpackhi_pd(input0.zw, input1.zw);
+
+		// zw1 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::d && comp1 == mix4::y>::test())
+			result_xy = _mm_unpackhi_pd(input1.zw, input0.xy);
+
+		// zw1 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::d && comp1 == mix4::w>::test())
+			result_xy = _mm_unpackhi_pd(input1.zw, input0.zw);
+
+		// zw1 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::d && comp1 == mix4::b>::test())
+			result_xy = _mm_unpackhi_pd(input1.zw, input1.xy);
+
+		// zw1 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::d && comp1 == mix4::d>::test())
+			result_xy = _mm_unpackhi_pd(input1.zw, input1.zw);
+
+		// xy0 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x>::test())
+			result_xy = _mm_unpacklo_pd(input0.xy, input0.xy);
+
+		// xy0 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::z>::test())
+			result_xy = _mm_unpacklo_pd(input0.xy, input0.zw);
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a>::test())
+			result_xy = _mm_unpacklo_pd(input0.xy, input1.xy);
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::c>::test())
+			result_xy = _mm_unpacklo_pd(input0.xy, input1.zw);
+
+		// xy1 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::x>::test())
+			result_xy = _mm_unpacklo_pd(input1.xy, input0.xy);
+
+		// xy1 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::z>::test())
+			result_xy = _mm_unpacklo_pd(input1.xy, input0.zw);
+
+		// xy1 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::a>::test())
+			result_xy = _mm_unpacklo_pd(input1.xy, input1.xy);
+
+		// xy1 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::c>::test())
+			result_xy = _mm_unpacklo_pd(input1.xy, input1.zw);
+
+		// zw0 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::x>::test())
+			result_xy = _mm_unpacklo_pd(input0.zw, input0.xy);
+
+		// zw0 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::z>::test())
+			result_xy = _mm_unpacklo_pd(input0.zw, input0.zw);
+
+		// zw0 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::a>::test())
+			result_xy = _mm_unpacklo_pd(input0.zw, input1.xy);
+
+		// zw0 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::c>::test())
+			result_xy = _mm_unpacklo_pd(input0.zw, input1.zw);
+
+		// zw1 xy0
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::x>::test())
+			result_xy = _mm_unpacklo_pd(input1.zw, input0.xy);
+
+		// zw1 zw0
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::z>::test())
+			result_xy = _mm_unpacklo_pd(input1.zw, input0.zw);
+
+		// zw1 xy1
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::a>::test())
+			result_xy = _mm_unpacklo_pd(input1.zw, input1.xy);
+
+		// zw1 zw1
+		else if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::c>::test())
+			result_xy = _mm_unpacklo_pd(input1.zw, input1.zw);
+
+		// xy0 xy0
+		else if (rtm_impl::static_condition<(comp0 == mix4::x || comp0 == mix4::y) && (comp1 == mix4::x || comp1 == mix4::y)>::test())
+			result_xy = _mm_shuffle_pd(input0.xy, input0.xy, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// xy0 zw0
+		else if (rtm_impl::static_condition<(comp0 == mix4::x || comp0 == mix4::y) && (comp1 == mix4::z || comp1 == mix4::w)>::test())
+			result_xy = _mm_shuffle_pd(input0.xy, input0.zw, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<(comp0 == mix4::x || comp0 == mix4::y) && (comp1 == mix4::a || comp1 == mix4::b)>::test())
+			result_xy = _mm_shuffle_pd(input0.xy, input1.xy, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<(comp0 == mix4::x || comp0 == mix4::y) && (comp1 == mix4::c || comp1 == mix4::d)>::test())
+			result_xy = _mm_shuffle_pd(input0.xy, input1.zw, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// xy1 xy0
+		else if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::b) && (comp1 == mix4::x || comp1 == mix4::y)>::test())
+			result_xy = _mm_shuffle_pd(input1.xy, input0.xy, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// xy1 zw0
+		else if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::b) && (comp1 == mix4::z || comp1 == mix4::w)>::test())
+			result_xy = _mm_shuffle_pd(input1.xy, input0.zw, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// xy1 xy1
+		else if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::b) && (comp1 == mix4::a || comp1 == mix4::b)>::test())
+			result_xy = _mm_shuffle_pd(input1.xy, input1.xy, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// xy1 zw1
+		else if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::b) && (comp1 == mix4::c || comp1 == mix4::d)>::test())
+			result_xy = _mm_shuffle_pd(input1.xy, input1.zw, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// zw0 xy0
+		else if (rtm_impl::static_condition<(comp0 == mix4::z || comp0 == mix4::w) && (comp1 == mix4::x || comp1 == mix4::y)>::test())
+			result_xy = _mm_shuffle_pd(input0.zw, input0.xy, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// zw0 zw0
+		else if (rtm_impl::static_condition<(comp0 == mix4::z || comp0 == mix4::w) && (comp1 == mix4::z || comp1 == mix4::w)>::test())
+			result_xy = _mm_shuffle_pd(input0.zw, input0.zw, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// zw0 xy1
+		else if (rtm_impl::static_condition<(comp0 == mix4::z || comp0 == mix4::w) && (comp1 == mix4::a || comp1 == mix4::b)>::test())
+			result_xy = _mm_shuffle_pd(input0.zw, input1.xy, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// zw0 zw1
+		else if (rtm_impl::static_condition<(comp0 == mix4::z || comp0 == mix4::w) && (comp1 == mix4::c || comp1 == mix4::d)>::test())
+			result_xy = _mm_shuffle_pd(input0.zw, input1.zw, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// zw1 xy0
+		else if (rtm_impl::static_condition<(comp0 == mix4::c || comp0 == mix4::d) && (comp1 == mix4::x || comp1 == mix4::y)>::test())
+			result_xy = _mm_shuffle_pd(input1.zw, input0.xy, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// zw1 zw0
+		else if (rtm_impl::static_condition<(comp0 == mix4::c || comp0 == mix4::d) && (comp1 == mix4::z || comp1 == mix4::w)>::test())
+			result_xy = _mm_shuffle_pd(input1.zw, input0.zw, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// zw1 xy1
+		else if (rtm_impl::static_condition<(comp0 == mix4::c || comp0 == mix4::d) && (comp1 == mix4::a || comp1 == mix4::b)>::test())
+			result_xy = _mm_shuffle_pd(input1.zw, input1.xy, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		// zw1 zw1
+		else if (rtm_impl::static_condition<(comp0 == mix4::c || comp0 == mix4::d) && (comp1 == mix4::c || comp1 == mix4::d)>::test())
+			result_xy = _mm_shuffle_pd(input1.zw, input1.zw, _MM_SHUFFLE2(int(comp1) % 2, int(comp0) % 2));
+
+		else
+			result_xy = _mm_setzero_pd();	// Set a dummy value, never used
+
+		if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::y>::test())
+		{
+			result_zw = input0.xy;
+		}
+
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::w>::test())
+		{
+			result_zw = input0.zw;
+		}
+
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::b>::test())
+		{
+			result_zw = input1.xy;
+		}
+
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::d>::test())
+		{
+			result_zw = input1.zw;
+		}
+
+	#if defined(RTM_SSE4_INTRINSICS)
+		// xy0 xy0	duplicate
+		// xy0 zw0
+		else if (rtm_impl::static_condition<(comp2 == mix4::x || comp2 == mix4::z) && (comp3 == mix4::y || comp3 == mix4::w)>::test())
+		{
+			constexpr int mask = (comp2 == mix4::z ? 1 : 0) | (comp3 == mix4::w ? 2 : 0);
+			result_zw = _mm_blend_pd(input0.xy, input0.zw, mask);
+		}
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<(comp2 == mix4::x || comp2 == mix4::a) && (comp3 == mix4::y || comp3 == mix4::b)>::test())
+		{
+			constexpr int mask = (comp2 == mix4::a ? 1 : 0) | (comp3 == mix4::b ? 2 : 0);
+			result_zw = _mm_blend_pd(input0.xy, input1.xy, mask);
+		}
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<(comp2 == mix4::x || comp2 == mix4::c) && (comp3 == mix4::y || comp3 == mix4::d)>::test())
+		{
+			constexpr int mask = (comp2 == mix4::c ? 1 : 0) | (comp3 == mix4::d ? 2 : 0);
+			result_zw = _mm_blend_pd(input0.xy, input1.zw, mask);
+		}
+
+		// xy1 xy0	duplicate
+		// xy1 zw0
+		else if (rtm_impl::static_condition<(comp2 == mix4::a || comp2 == mix4::z) && (comp3 == mix4::b || comp3 == mix4::w)>::test())
+		{
+			constexpr int mask = (comp2 == mix4::z ? 1 : 0) | (comp3 == mix4::w ? 2 : 0);
+			result_zw = _mm_blend_pd(input1.xy, input0.zw, mask);
+		}
+
+		// xy1 xy1	duplicate
+		// xy1 zw1
+		else if (rtm_impl::static_condition<(comp2 == mix4::a || comp2 == mix4::c) && (comp3 == mix4::b || comp3 == mix4::d)>::test())
+		{
+			constexpr int mask = (comp2 == mix4::c ? 1 : 0) | (comp3 == mix4::d ? 2 : 0);
+			result_zw = _mm_blend_pd(input1.xy, input1.zw, mask);
+		}
+	#endif // defined(RTM_SSE4_INTRINSICS)
+
+	#if defined(RTM_SSE3_INTRINSICS)
+		else if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::x>::test())
+			result_zw = _mm_movedup_pd(input0.xy);
+
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::z>::test())
+			result_zw = _mm_movedup_pd(input0.zw);
+
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::a>::test())
+			result_zw = _mm_movedup_pd(input1.xy);
+
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::c>::test())
+			result_zw = _mm_movedup_pd(input1.zw);
+	#endif // defined(RTM_SSE3_INTRINSICS)
+
+		// xy0 xy0	duplicate
+		// xy0 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::y>::test())
+			result_zw = _mm_move_sd(input0.xy, input0.zw);
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::y>::test())
+			result_zw = _mm_move_sd(input0.xy, input1.xy);
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::y>::test())
+			result_zw = _mm_move_sd(input0.xy, input1.zw);
+
+		// xy1 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::b>::test())
+			result_zw = _mm_move_sd(input1.xy, input0.xy);
+
+		// xy1 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::b>::test())
+			result_zw = _mm_move_sd(input1.xy, input0.zw);
+
+		// xy1 xy1	duplicate
+		// xy1 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::b>::test())
+			result_zw = _mm_move_sd(input1.xy, input1.zw);
+
+		// zw0 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::w>::test())
+			result_zw = _mm_move_sd(input0.zw, input0.xy);
+
+		// zw0 zw0 duplicate
+		// zw0 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::w>::test())
+			result_zw = _mm_move_sd(input0.zw, input1.xy);
+
+		// zw0 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::w>::test())
+			result_zw = _mm_move_sd(input0.zw, input1.zw);
+
+		// zw1 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::d>::test())
+			result_zw = _mm_move_sd(input1.zw, input0.xy);
+
+		// zw1 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::d>::test())
+			result_zw = _mm_move_sd(input1.zw, input0.zw);
+
+		// zw1 xy1
+		// zw1 zw1 duplicate
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::d>::test())
+			result_zw = _mm_move_sd(input1.zw, input1.xy);
+
+		// xy0 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::y && comp3 == mix4::y>::test())
+			result_zw = _mm_unpackhi_pd(input0.xy, input0.xy);
+
+		// xy0 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::y && comp3 == mix4::w>::test())
+			result_zw = _mm_unpackhi_pd(input0.xy, input0.zw);
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::y && comp3 == mix4::b>::test())
+			result_zw = _mm_unpackhi_pd(input0.xy, input1.xy);
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::y && comp3 == mix4::d>::test())
+			result_zw = _mm_unpackhi_pd(input0.xy, input1.zw);
+
+		// xy1 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::b && comp3 == mix4::y>::test())
+			result_zw = _mm_unpackhi_pd(input1.xy, input0.xy);
+
+		// xy1 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::b && comp3 == mix4::w>::test())
+			result_zw = _mm_unpackhi_pd(input1.xy, input0.zw);
+
+		// xy1 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::b && comp3 == mix4::b>::test())
+			result_zw = _mm_unpackhi_pd(input1.xy, input1.xy);
+
+		// xy1 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::b && comp3 == mix4::d>::test())
+			result_zw = _mm_unpackhi_pd(input1.xy, input1.zw);
+
+		// zw0 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::w && comp3 == mix4::y>::test())
+			result_zw = _mm_unpackhi_pd(input0.zw, input0.xy);
+
+		// zw0 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::w && comp3 == mix4::w>::test())
+			result_zw = _mm_unpackhi_pd(input0.zw, input0.zw);
+
+		// zw0 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::w && comp3 == mix4::b>::test())
+			result_zw = _mm_unpackhi_pd(input0.zw, input1.xy);
+
+		// zw0 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::w && comp3 == mix4::d>::test())
+			result_zw = _mm_unpackhi_pd(input0.zw, input1.zw);
+
+		// zw1 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::d && comp3 == mix4::y>::test())
+			result_zw = _mm_unpackhi_pd(input1.zw, input0.xy);
+
+		// zw1 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::d && comp3 == mix4::w>::test())
+			result_zw = _mm_unpackhi_pd(input1.zw, input0.zw);
+
+		// zw1 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::d && comp3 == mix4::b>::test())
+			result_zw = _mm_unpackhi_pd(input1.zw, input1.xy);
+
+		// zw1 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::d && comp3 == mix4::d>::test())
+			result_zw = _mm_unpackhi_pd(input1.zw, input1.zw);
+
+		// xy0 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::x>::test())
+			result_zw = _mm_unpacklo_pd(input0.xy, input0.xy);
+
+		// xy0 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::z>::test())
+			result_zw = _mm_unpacklo_pd(input0.xy, input0.zw);
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::a>::test())
+			result_zw = _mm_unpacklo_pd(input0.xy, input1.xy);
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::x && comp3 == mix4::c>::test())
+			result_zw = _mm_unpacklo_pd(input0.xy, input1.zw);
+
+		// xy1 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::x>::test())
+			result_zw = _mm_unpacklo_pd(input1.xy, input0.xy);
+
+		// xy1 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::z>::test())
+			result_zw = _mm_unpacklo_pd(input1.xy, input0.zw);
+
+		// xy1 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::a>::test())
+			result_zw = _mm_unpacklo_pd(input1.xy, input1.xy);
+
+		// xy1 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::a && comp3 == mix4::c>::test())
+			result_zw = _mm_unpacklo_pd(input1.xy, input1.zw);
+
+		// zw0 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::x>::test())
+			result_zw = _mm_unpacklo_pd(input0.zw, input0.xy);
+
+		// zw0 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::z>::test())
+			result_zw = _mm_unpacklo_pd(input0.zw, input0.zw);
+
+		// zw0 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::a>::test())
+			result_zw = _mm_unpacklo_pd(input0.zw, input1.xy);
+
+		// zw0 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::z && comp3 == mix4::c>::test())
+			result_zw = _mm_unpacklo_pd(input0.zw, input1.zw);
+
+		// zw1 xy0
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::x>::test())
+			result_zw = _mm_unpacklo_pd(input1.zw, input0.xy);
+
+		// zw1 zw0
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::z>::test())
+			result_zw = _mm_unpacklo_pd(input1.zw, input0.zw);
+
+		// zw1 xy1
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::a>::test())
+			result_zw = _mm_unpacklo_pd(input1.zw, input1.xy);
+
+		// zw1 zw1
+		else if (rtm_impl::static_condition<comp2 == mix4::c && comp3 == mix4::c>::test())
+			result_zw = _mm_unpacklo_pd(input1.zw, input1.zw);
+
+		// xy0 xy0
+		else if (rtm_impl::static_condition<(comp2 == mix4::x || comp2 == mix4::y) && (comp3 == mix4::x || comp3 == mix4::y)>::test())
+			result_zw = _mm_shuffle_pd(input0.xy, input0.xy, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// xy0 zw0
+		else if (rtm_impl::static_condition<(comp2 == mix4::x || comp2 == mix4::y) && (comp3 == mix4::z || comp3 == mix4::w)>::test())
+			result_zw = _mm_shuffle_pd(input0.xy, input0.zw, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// xy0 xy1
+		else if (rtm_impl::static_condition<(comp2 == mix4::x || comp2 == mix4::y) && (comp3 == mix4::a || comp3 == mix4::b)>::test())
+			result_zw = _mm_shuffle_pd(input0.xy, input1.xy, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// xy0 zw1
+		else if (rtm_impl::static_condition<(comp2 == mix4::x || comp2 == mix4::y) && (comp3 == mix4::c || comp3 == mix4::d)>::test())
+			result_zw = _mm_shuffle_pd(input0.xy, input1.zw, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// xy1 xy0
+		else if (rtm_impl::static_condition<(comp2 == mix4::a || comp2 == mix4::b) && (comp3 == mix4::x || comp3 == mix4::y)>::test())
+			result_zw = _mm_shuffle_pd(input1.xy, input0.xy, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// xy1 zw0
+		else if (rtm_impl::static_condition<(comp2 == mix4::a || comp2 == mix4::b) && (comp3 == mix4::z || comp3 == mix4::w)>::test())
+			result_zw = _mm_shuffle_pd(input1.xy, input0.zw, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// xy1 xy1
+		else if (rtm_impl::static_condition<(comp2 == mix4::a || comp2 == mix4::b) && (comp3 == mix4::a || comp3 == mix4::b)>::test())
+			result_zw = _mm_shuffle_pd(input1.xy, input1.xy, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// xy1 zw1
+		else if (rtm_impl::static_condition<(comp2 == mix4::a || comp2 == mix4::b) && (comp3 == mix4::c || comp3 == mix4::d)>::test())
+			result_zw = _mm_shuffle_pd(input1.xy, input1.zw, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// zw0 xy0
+		else if (rtm_impl::static_condition<(comp2 == mix4::z || comp2 == mix4::w) && (comp3 == mix4::x || comp3 == mix4::y)>::test())
+			result_zw = _mm_shuffle_pd(input0.zw, input0.xy, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// zw0 zw0
+		else if (rtm_impl::static_condition<(comp2 == mix4::z || comp2 == mix4::w) && (comp3 == mix4::z || comp3 == mix4::w)>::test())
+			result_zw = _mm_shuffle_pd(input0.zw, input0.zw, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// zw0 xy1
+		else if (rtm_impl::static_condition<(comp2 == mix4::z || comp2 == mix4::w) && (comp3 == mix4::a || comp3 == mix4::b)>::test())
+			result_zw = _mm_shuffle_pd(input0.zw, input1.xy, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// zw0 zw1
+		else if (rtm_impl::static_condition<(comp2 == mix4::z || comp2 == mix4::w) && (comp3 == mix4::c || comp3 == mix4::d)>::test())
+			result_zw = _mm_shuffle_pd(input0.zw, input1.zw, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// zw1 xy0
+		else if (rtm_impl::static_condition<(comp2 == mix4::c || comp2 == mix4::d) && (comp3 == mix4::x || comp3 == mix4::y)>::test())
+			result_zw = _mm_shuffle_pd(input1.zw, input0.xy, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// zw1 zw0
+		else if (rtm_impl::static_condition<(comp2 == mix4::c || comp2 == mix4::d) && (comp3 == mix4::z || comp3 == mix4::w)>::test())
+			result_zw = _mm_shuffle_pd(input1.zw, input0.zw, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// zw1 xy1
+		else if (rtm_impl::static_condition<(comp2 == mix4::c || comp2 == mix4::d) && (comp3 == mix4::a || comp3 == mix4::b)>::test())
+			result_zw = _mm_shuffle_pd(input1.zw, input1.xy, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		// zw1 zw1
+		else if (rtm_impl::static_condition<(comp2 == mix4::c || comp2 == mix4::d) && (comp3 == mix4::c || comp3 == mix4::d)>::test())
+			result_zw = _mm_shuffle_pd(input1.zw, input1.zw, _MM_SHUFFLE2(int(comp3) % 2, int(comp2) % 2));
+
+		else
+			result_zw = _mm_setzero_pd();	// Set a dummy value, never used
+
+
+		return vector4d{ result_xy, result_zw };
+#else
+		// Non-simd variant
 		constexpr component4 component0 = rtm_impl::mix_to_component(comp0);
 		constexpr component4 component1 = rtm_impl::mix_to_component(comp1);
 		constexpr component4 component2 = rtm_impl::mix_to_component(comp2);
@@ -2953,6 +3612,7 @@ namespace rtm
 		const double w = rtm_impl::is_mix_xyzw(comp3) ? vector_get_component(input0, component3) : vector_get_component(input1, component3);
 
 		return vector_set(x, y, z, w);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
