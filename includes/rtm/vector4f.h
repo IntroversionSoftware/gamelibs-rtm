@@ -4047,22 +4047,58 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [x] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_x(vector4f_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::x, mix4::x, mix4::x, mix4::x>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_x(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_shuffle_ps(input, input, _MM_SHUFFLE(0, 0, 0, 0));
+#elif defined(RTM_NEON_INTRINSICS)
+		return vmovq_n_f32(vgetq_lane_f32(input, 0));
+#else
+		return vector4f{ input.x, input.x, input.x, input.x };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [y] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_y(vector4f_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::y, mix4::y, mix4::y, mix4::y>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_y(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_shuffle_ps(input, input, _MM_SHUFFLE(1, 1, 1, 1));
+#elif defined(RTM_NEON_INTRINSICS)
+		return vmovq_n_f32(vgetq_lane_f32(input, 1));
+#else
+		return vector4f{ input.y, input.y, input.y, input.y };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [z] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_z(vector4f_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::z, mix4::z, mix4::z, mix4::z>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_z(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_shuffle_ps(input, input, _MM_SHUFFLE(2, 2, 2, 2));
+#elif defined(RTM_NEON_INTRINSICS)
+		return vmovq_n_f32(vgetq_lane_f32(input, 2));
+#else
+		return vector4f{ input.z, input.z, input.z, input.z };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [w] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_w(vector4f_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::w, mix4::w, mix4::w, mix4::w>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_w(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_shuffle_ps(input, input, _MM_SHUFFLE(3, 3, 3, 3));
+#elif defined(RTM_NEON_INTRINSICS)
+		return vmovq_n_f32(vgetq_lane_f32(input, 3));
+#else
+		return vector4f{ input.w, input.w, input.w, input.w };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Logical
