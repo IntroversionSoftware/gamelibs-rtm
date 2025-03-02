@@ -3850,7 +3850,8 @@ namespace rtm
 			return _mm_shuffle_ps(x1x1y0y0, z0z0w1w1, _MM_SHUFFLE(2, 0, 2, 0));
 		}
 
-		// All vector_mix permutations are handled above
+		// All vector_mix permutations are handled above, return a dummy value to avoid warnings
+		return _mm_setzero_ps();
 #elif defined(RTM_NEON_INTRINSICS)
 	#if defined(RTM_COMPILER_CLANG) || defined(RTM_COMPILER_GCC)
 		#if __has_builtin(__builtin_shufflevector)
