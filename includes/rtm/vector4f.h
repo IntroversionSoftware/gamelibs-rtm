@@ -3567,6 +3567,9 @@ namespace rtm
 			return input1;
 
 #if defined(RTM_SSE2_INTRINSICS)
+		// Instruction costs taken from Agner's instruction tables
+		// Cost:	ops, latency, throughput, execution port
+
 	#if defined(RTM_AVX_INTRINSICS)
 		// TODO: AVX introduced the permute instruction (_mm_permute_ps) but on some AMD processors like Zen2
 		// the instruction has much higher latency and a lower reciprocal throughput which makes it a poor fit
@@ -3578,6 +3581,11 @@ namespace rtm
 	#endif // defined(RTM_AVX_INTRINSICS)
 
 	#if defined(RTM_SSE4_INTRINSICS)
+		// blendps is generally always faster than other instructions and/or it can execute over more ports
+		// AMD Jaguar:	???
+		// AMD Zen 2:	1, 1, 0.33, P013
+		// AMD Zen 4:	1, 1, 0.25, P0123
+
         // Each component comes from the respective position of input 0 or input 1
         if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::x) && (comp1 == mix4::b || comp1 == mix4::y) &&
                                        (comp2 == mix4::c || comp2 == mix4::z) && (comp3 == mix4::d || comp3 == mix4::w)>::test())
@@ -3586,6 +3594,11 @@ namespace rtm
                                  (comp2 == mix4::c ? 4 : 0) | (comp3 == mix4::d ? 8 : 0);
             return _mm_blend_ps(input0, input1, mask);
         }
+
+		// insertps would otherwise require 2 shuffle instructions
+		// AMD Jaguar:	1, ?, 0.5, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.33, P123
 
         // First component comes from input 1, others come from the respective positions of input 0
         if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && comp1 == mix4::y && comp2 == mix4::z && comp3 == mix4::w>::test())
@@ -3621,6 +3634,11 @@ namespace rtm
 	#endif // defined(RTM_SSE4_INTRINSICS)
 
 	#if defined(RTM_SSE3_INTRINSICS)
+		// movs[lh]dup is typically as fast or faster than shufps
+		// AMD Jaguar:	1, 1, 0.5, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.33, P123
+
 		// Duplicate low elements of input 0
 		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::z && comp3 == mix4::z>::test())
 			return _mm_moveldup_ps(input0);
@@ -3637,6 +3655,11 @@ namespace rtm
 		if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::b && comp2 == mix4::d && comp3 == mix4::d>::test())
 			return _mm_movehdup_ps(input1);
 	#endif // defined(RTM_SSE3_INTRINSICS)
+
+		// unpck[hl]ps is typically as fast as shufps
+		// AMD Jaguar:	1, 2, 0.5, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.33, P123
 
 		// Low words from both inputs are interleaved
 		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a && comp2 == mix4::y && comp3 == mix4::b>::test())
@@ -3670,6 +3693,14 @@ namespace rtm
 		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::c && comp2 == mix4::d && comp3 == mix4::d>::test())
 			return _mm_unpackhi_ps(input1, input1);
 
+#if 0
+		// mov[lh/hl]ps is at times slower than shufps and it can execute on fewer ports
+		// Its usage can be replicated using a single shufps instruction.
+		// For these reasons, we do not use it. Code is left here to document that it was considered.
+		// AMD Jaguar:	1, 2, 2, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.5, P12
+
 		// Duplicate bottom half of input 0
 		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::x && comp3 == mix4::y>::test())
 			return _mm_movelh_ps(input0, input0);
@@ -3701,6 +3732,12 @@ namespace rtm
 		// Move top half of input 0 to top of input 1
 		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::d && comp2 == mix4::z && comp3 == mix4::w>::test())
 			return _mm_movehl_ps(input0, input1);
+#endif
+
+		// shufps is the baseline instruction for vector_mix
+		// AMD Jaguar:	1, 2, 0.5, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.33, P123
 
 		// All four components come from input 0
 		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
