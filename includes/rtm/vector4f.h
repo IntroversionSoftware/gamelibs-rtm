@@ -3572,8 +3572,8 @@ namespace rtm
 
 	#if defined(RTM_COMPILER_CLANG) || defined(RTM_COMPILER_GCC)
 		#if __has_builtin(__builtin_shufflevector)
-			// GCC/Clang offer a builtin intrinsic to generate optimal assembly for this
-			return __builtin_shufflevector(input0, input1, int(comp0), int(comp1), int(comp2), int(comp3));
+		// GCC/Clang offer a builtin intrinsic to generate optimal assembly for this
+		return __builtin_shufflevector(input0, input1, int(comp0), int(comp1), int(comp2), int(comp3));
 		#endif
 	#endif
 
