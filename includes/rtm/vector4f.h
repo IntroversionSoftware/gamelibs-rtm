@@ -3844,9 +3844,7 @@ namespace rtm
 		}
 
 		// All vector_mix permutations are handled above
-#endif // defined(RTM_SSE2_INTRINSICS)
-
-#if defined(RTM_NEON_INTRINSICS)
+#elif defined(RTM_NEON_INTRINSICS)
 	#if defined(RTM_NEON64_INTRINSICS)
 		// Duplicate low words of input 0
 		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::y && comp3 == mix4::y>::test())
@@ -4012,7 +4010,6 @@ namespace rtm
 		}
 
 		// Fallback to handle remaining cases
-		{
 		const float x = vgetq_lane_f32(rtm_impl::is_mix_xyzw(comp0) ? input0 : input1, int(comp0) % 4);
 		const float y = vgetq_lane_f32(rtm_impl::is_mix_xyzw(comp1) ? input0 : input1, int(comp1) % 4);
 		const float z = vgetq_lane_f32(rtm_impl::is_mix_xyzw(comp2) ? input0 : input1, int(comp2) % 4);
@@ -4020,10 +4017,8 @@ namespace rtm
 		const float32x2_t xy = vset_lane_f32(y, vmov_n_f32(x), 1);
 		const float32x2_t zw = vset_lane_f32(w, vmov_n_f32(z), 1);
 		return vcombine_f32(xy, zw);
-		}
-#endif // defined(RTM_NEON_INTRINSICS)
-
-        // Slow code path, not yet optimized or not using intrinsics
+#else
+		// Non-simd variant
 		constexpr component4 component0 = rtm_impl::mix_to_component(comp0);
 		constexpr component4 component1 = rtm_impl::mix_to_component(comp1);
 		constexpr component4 component2 = rtm_impl::mix_to_component(comp2);
@@ -4046,6 +4041,7 @@ namespace rtm
 		const float w = rtm_impl::is_mix_xyzw(comp3) ? w0 : w1;
 
 		return vector_set(x, y, z, w);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
