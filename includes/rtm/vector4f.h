@@ -3571,7 +3571,7 @@ namespace rtm
 		// Cost:	ops, latency, throughput, execution port
 
 	#if defined(RTM_COMPILER_CLANG) || defined(RTM_COMPILER_GCC)
-		#if __has_builtin(__builtin_shufflevector)
+		#if defined(__has_builtin) && __has_builtin(__builtin_shufflevector)
 		// GCC/Clang offer a builtin intrinsic to generate optimal assembly for this
 		return __builtin_shufflevector(input0, input1, int(comp0), int(comp1), int(comp2), int(comp3));
 		#endif
@@ -3854,7 +3854,7 @@ namespace rtm
 		return _mm_setzero_ps();
 #elif defined(RTM_NEON_INTRINSICS)
 	#if defined(RTM_COMPILER_CLANG) || defined(RTM_COMPILER_GCC)
-		#if __has_builtin(__builtin_shufflevector)
+		#if defined(__has_builtin) && __has_builtin(__builtin_shufflevector)
 			// GCC/Clang offer a builtin intrinsic to generate optimal assembly for this
 			return __builtin_shufflevector(input0, input1, int(comp0), int(comp1), int(comp2), int(comp3));
 		#endif
