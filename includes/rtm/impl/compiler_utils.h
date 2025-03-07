@@ -97,3 +97,13 @@
 // Joins two pre-processor tokens: RTM_JOIN_TOKENS(foo, bar) yields 'foobar'
 //////////////////////////////////////////////////////////////////////////
 #define RTM_JOIN_TOKENS(a, b) a ## b
+
+//////////////////////////////////////////////////////////////////////////
+// Wraps the __has_builtin pre-processor macro to handle non-clang and early
+// GCC compilers
+//////////////////////////////////////////////////////////////////////////
+#if defined(__has_builtin)
+	#define RTM_HAS_BUILTIN(x) __has_builtin(x)
+#else
+	#define RTM_HAS_BUILTIN(x) 0
+#endif
