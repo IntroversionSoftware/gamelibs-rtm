@@ -35,11 +35,89 @@
 using namespace rtm;
 
 template<typename TransformType, typename FloatType>
-static void test_qvs_impl(const TransformType& identity, const FloatType threshold)
+static void test_qvs_interpolation(const FloatType threshold)
 {
 	using QuatType = typename related_types<FloatType>::quat;
 	using Vector4Type = typename related_types<FloatType>::vector4;
 	using ScalarType = typename related_types<FloatType>::scalar;
+
+	FloatType alpha = FloatType(0.33);
+	ScalarType alpha_s = scalar_set(alpha);
+	QuatType quat0 = quat_normalize(quat_from_euler(scalar_deg_to_rad(FloatType(30.0)), scalar_deg_to_rad(FloatType(-45.0)), scalar_deg_to_rad(FloatType(90.0))));
+	QuatType quat1 = quat_normalize(quat_from_euler(scalar_deg_to_rad(FloatType(45.0)), scalar_deg_to_rad(FloatType(60.0)), scalar_deg_to_rad(FloatType(120.0))));
+
+	QuatType quat_ref_lerp = quat_lerp(quat0, quat1, alpha);
+	QuatType quat_ref_lerp_s = quat_lerp(quat0, quat1, alpha_s);
+	QuatType quat_ref_slerp = quat_slerp(quat0, quat1, alpha);
+	QuatType quat_ref_slerp_s = quat_slerp(quat0, quat1, alpha_s);
+
+	Vector4Type trans0 = vector_set(FloatType(-0.001138), FloatType(0.91623), FloatType(-1.624598));
+	Vector4Type trans1 = vector_set(FloatType(-0.001138), FloatType(0.91623), FloatType(-1.624598));
+
+	Vector4Type trans_ref = vector_lerp(trans0, trans1, alpha);
+	Vector4Type trans_ref_s = vector_lerp(trans0, trans1, alpha_s);
+
+	FloatType scale0 = FloatType(-1.915);
+	FloatType scale1 = FloatType(-0.2113);
+
+	FloatType scale_ref = scalar_lerp(scale0, scale1, alpha);
+	ScalarType scale_ref_s = scalar_lerp(scalar_set(scale0), scalar_set(scale1), alpha_s);
+
+	TransformType transform0 = qvs_set(quat0, trans0, scale0);
+	TransformType transform1 = qvs_set(quat1, trans1, scale1);
+
+	TransformType transform_ref_lerp = qvs_set(quat_ref_lerp, trans_ref, scale_ref);
+	TransformType transform_ref_slerp = qvs_set(quat_ref_slerp, trans_ref, scale_ref);
+
+	TransformType transform_ref_lerp_s = qvs_set(quat_ref_lerp_s, trans_ref_s, scale_ref_s);
+	TransformType transform_ref_slerp_s = qvs_set(quat_ref_slerp_s, trans_ref_s, scale_ref_s);
+
+	TransformType transform_lerp = qvs_lerp(transform0, transform1, alpha);
+	TransformType transform_lerp_s = qvs_lerp(transform0, transform1, alpha_s);
+
+	TransformType transform_slerp = qvs_slerp(transform0, transform1, alpha);
+	TransformType transform_slerp_s = qvs_slerp(transform0, transform1, alpha_s);
+
+	TransformType transform_lerp_no_scale = qvs_lerp_no_scale(transform0, transform1, alpha);
+	TransformType transform_lerp_no_scale_s = qvs_lerp_no_scale(transform0, transform1, alpha_s);
+
+	TransformType transform_slerp_no_scale = qvs_slerp_no_scale(transform0, transform1, alpha);
+	TransformType transform_slerp_no_scale_s = qvs_slerp_no_scale(transform0, transform1, alpha_s);
+
+	CHECK(quat_near_equal(transform_lerp.rotation, transform_ref_lerp.rotation, threshold));
+	CHECK(quat_near_equal(transform_lerp_s.rotation, transform_ref_lerp_s.rotation, threshold));
+	CHECK(vector_all_near_equal3(qvs_get_translation(transform_lerp), qvs_get_translation(transform_ref_lerp), threshold));
+	CHECK(vector_all_near_equal3(qvs_get_translation(transform_lerp_s), qvs_get_translation(transform_ref_lerp_s), threshold));
+	CHECK(scalar_near_equal(qvs_get_scale(transform_lerp), qvs_get_scale(transform_ref_lerp), threshold));
+	CHECK(scalar_near_equal(qvs_get_scale(transform_lerp_s), qvs_get_scale(transform_ref_lerp_s), threshold));
+
+	CHECK(quat_near_equal(transform_slerp.rotation, transform_ref_slerp.rotation, threshold));
+	CHECK(quat_near_equal(transform_slerp_s.rotation, transform_ref_slerp_s.rotation, threshold));
+	CHECK(vector_all_near_equal3(qvs_get_translation(transform_slerp), qvs_get_translation(transform_ref_slerp), threshold));
+	CHECK(vector_all_near_equal3(qvs_get_translation(transform_slerp_s), qvs_get_translation(transform_ref_slerp_s), threshold));
+	CHECK(scalar_near_equal(qvs_get_scale(transform_slerp), qvs_get_scale(transform_ref_slerp), threshold));
+	CHECK(scalar_near_equal(qvs_get_scale(transform_slerp_s), qvs_get_scale(transform_ref_slerp_s), threshold));
+
+	CHECK(quat_near_equal(transform_lerp_no_scale.rotation, transform_ref_lerp.rotation, threshold));
+	CHECK(quat_near_equal(transform_lerp_no_scale_s.rotation, transform_ref_lerp_s.rotation, threshold));
+	CHECK(vector_all_near_equal3(qvs_get_translation(transform_lerp_no_scale), qvs_get_translation(transform_ref_lerp), threshold));
+	CHECK(vector_all_near_equal3(qvs_get_translation(transform_lerp_no_scale_s), qvs_get_translation(transform_ref_lerp_s), threshold));
+	CHECK(scalar_near_equal(qvs_get_scale(transform_lerp_no_scale), qvs_get_scale(transform0), threshold));
+	CHECK(scalar_near_equal(qvs_get_scale(transform_lerp_no_scale_s), qvs_get_scale(transform0), threshold));
+
+	CHECK(quat_near_equal(transform_slerp_no_scale.rotation, transform_ref_slerp.rotation, threshold));
+	CHECK(quat_near_equal(transform_slerp_no_scale_s.rotation, transform_ref_slerp_s.rotation, threshold));
+	CHECK(vector_all_near_equal3(qvs_get_translation(transform_slerp_no_scale), qvs_get_translation(transform_ref_slerp), threshold));
+	CHECK(vector_all_near_equal3(qvs_get_translation(transform_slerp_no_scale_s), qvs_get_translation(transform_ref_slerp_s), threshold));
+	CHECK(scalar_near_equal(qvs_get_scale(transform_slerp_no_scale), qvs_get_scale(transform0), threshold));
+	CHECK(scalar_near_equal(qvs_get_scale(transform_slerp_no_scale_s), qvs_get_scale(transform0), threshold));
+}
+
+template<typename TransformType, typename FloatType>
+static void test_qvs_impl(const TransformType& identity, const FloatType threshold)
+{
+	using QuatType = typename related_types<FloatType>::quat;
+	using Vector4Type = typename related_types<FloatType>::vector4;
 	using Matrix3x3Type = typename related_types<FloatType>::matrix3x3;
 	using Matrix3x4Type = typename related_types<FloatType>::matrix3x4;
 
@@ -233,78 +311,7 @@ static void test_qvs_impl(const TransformType& identity, const FloatType thresho
 		CHECK(quat_is_normalized(transform_b.rotation, threshold));
 	}
 
-	{
-		FloatType alpha = FloatType(0.33);
-		ScalarType alpha_s = scalar_set(alpha);
-		QuatType quat0 = quat_normalize(quat_from_euler(scalar_deg_to_rad(FloatType(30.0)), scalar_deg_to_rad(FloatType(-45.0)), scalar_deg_to_rad(FloatType(90.0))));
-		QuatType quat1 = quat_normalize(quat_from_euler(scalar_deg_to_rad(FloatType(45.0)), scalar_deg_to_rad(FloatType(60.0)), scalar_deg_to_rad(FloatType(120.0))));
-
-		QuatType quat_ref_lerp = quat_lerp(quat0, quat1, alpha);
-		QuatType quat_ref_lerp_s = quat_lerp(quat0, quat1, alpha_s);
-		QuatType quat_ref_slerp = quat_slerp(quat0, quat1, alpha);
-		QuatType quat_ref_slerp_s = quat_slerp(quat0, quat1, alpha_s);
-
-		Vector4Type trans0 = vector_set(FloatType(-0.001138), FloatType(0.91623), FloatType(-1.624598));
-		Vector4Type trans1 = vector_set(FloatType(-0.001138), FloatType(0.91623), FloatType(-1.624598));
-
-		Vector4Type trans_ref = vector_lerp(trans0, trans1, alpha);
-		Vector4Type trans_ref_s = vector_lerp(trans0, trans1, alpha_s);
-
-		FloatType scale0 = FloatType(-1.915);
-		FloatType scale1 = FloatType(-0.2113);
-
-		FloatType scale_ref = scalar_lerp(scale0, scale1, alpha);
-		ScalarType scale_ref_s = scalar_lerp(scalar_set(scale0), scalar_set(scale1), alpha_s);
-
-		TransformType transform0 = qvs_set(quat0, trans0, scale0);
-		TransformType transform1 = qvs_set(quat1, trans1, scale1);
-
-		TransformType transform_ref_lerp = qvs_set(quat_ref_lerp, trans_ref, scale_ref);
-		TransformType transform_ref_slerp = qvs_set(quat_ref_slerp, trans_ref, scale_ref);
-
-		TransformType transform_ref_lerp_s = qvs_set(quat_ref_lerp_s, trans_ref_s, scale_ref_s);
-		TransformType transform_ref_slerp_s = qvs_set(quat_ref_slerp_s, trans_ref_s, scale_ref_s);
-
-		TransformType transform_lerp = qvs_lerp(transform0, transform1, alpha);
-		TransformType transform_lerp_s = qvs_lerp(transform0, transform1, alpha_s);
-
-		TransformType transform_slerp = qvs_slerp(transform0, transform1, alpha);
-		TransformType transform_slerp_s = qvs_slerp(transform0, transform1, alpha_s);
-
-		TransformType transform_lerp_no_scale = qvs_lerp_no_scale(transform0, transform1, alpha);
-		TransformType transform_lerp_no_scale_s = qvs_lerp_no_scale(transform0, transform1, alpha_s);
-
-		TransformType transform_slerp_no_scale = qvs_slerp_no_scale(transform0, transform1, alpha);
-		TransformType transform_slerp_no_scale_s = qvs_slerp_no_scale(transform0, transform1, alpha_s);
-
-		CHECK(quat_near_equal(transform_lerp.rotation, transform_ref_lerp.rotation, threshold));
-		CHECK(quat_near_equal(transform_lerp_s.rotation, transform_ref_lerp_s.rotation, threshold));
-		CHECK(vector_all_near_equal3(qvs_get_translation(transform_lerp), qvs_get_translation(transform_ref_lerp), threshold));
-		CHECK(vector_all_near_equal3(qvs_get_translation(transform_lerp_s), qvs_get_translation(transform_ref_lerp_s), threshold));
-		CHECK(scalar_near_equal(qvs_get_scale(transform_lerp), qvs_get_scale(transform_ref_lerp), threshold));
-		CHECK(scalar_near_equal(qvs_get_scale(transform_lerp_s), qvs_get_scale(transform_ref_lerp_s), threshold));
-
-		CHECK(quat_near_equal(transform_slerp.rotation, transform_ref_slerp.rotation, threshold));
-		CHECK(quat_near_equal(transform_slerp_s.rotation, transform_ref_slerp_s.rotation, threshold));
-		CHECK(vector_all_near_equal3(qvs_get_translation(transform_slerp), qvs_get_translation(transform_ref_slerp), threshold));
-		CHECK(vector_all_near_equal3(qvs_get_translation(transform_slerp_s), qvs_get_translation(transform_ref_slerp_s), threshold));
-		CHECK(scalar_near_equal(qvs_get_scale(transform_slerp), qvs_get_scale(transform_ref_slerp), threshold));
-		CHECK(scalar_near_equal(qvs_get_scale(transform_slerp_s), qvs_get_scale(transform_ref_slerp_s), threshold));
-
-		CHECK(quat_near_equal(transform_lerp_no_scale.rotation, transform_ref_lerp.rotation, threshold));
-		CHECK(quat_near_equal(transform_lerp_no_scale_s.rotation, transform_ref_lerp_s.rotation, threshold));
-		CHECK(vector_all_near_equal3(qvs_get_translation(transform_lerp_no_scale), qvs_get_translation(transform_ref_lerp), threshold));
-		CHECK(vector_all_near_equal3(qvs_get_translation(transform_lerp_no_scale_s), qvs_get_translation(transform_ref_lerp_s), threshold));
-		CHECK(scalar_near_equal(qvs_get_scale(transform_lerp_no_scale), qvs_get_scale(transform0), threshold));
-		CHECK(scalar_near_equal(qvs_get_scale(transform_lerp_no_scale_s), qvs_get_scale(transform0), threshold));
-
-		CHECK(quat_near_equal(transform_slerp_no_scale.rotation, transform_ref_slerp.rotation, threshold));
-		CHECK(quat_near_equal(transform_slerp_no_scale_s.rotation, transform_ref_slerp_s.rotation, threshold));
-		CHECK(vector_all_near_equal3(qvs_get_translation(transform_slerp_no_scale), qvs_get_translation(transform_ref_slerp), threshold));
-		CHECK(vector_all_near_equal3(qvs_get_translation(transform_slerp_no_scale_s), qvs_get_translation(transform_ref_slerp_s), threshold));
-		CHECK(scalar_near_equal(qvs_get_scale(transform_slerp_no_scale), qvs_get_scale(transform0), threshold));
-		CHECK(scalar_near_equal(qvs_get_scale(transform_slerp_no_scale_s), qvs_get_scale(transform0), threshold));
-	}
+	test_qvs_interpolation<TransformType>(threshold);
 
 	{
 		const FloatType inf = std::numeric_limits<FloatType>::infinity();

@@ -3558,7 +3558,41 @@ namespace rtm
 	template<mix4 comp0, mix4 comp1, mix4 comp2, mix4 comp3>
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_mix(vector4f_arg0 input0, vector4f_arg1 input1) RTM_NO_EXCEPT
 	{
-#if defined(RTM_SSE4_INTRINSICS)
+		// Exactly input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return input0;
+
+		// Exactly input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return input1;
+
+#if defined(RTM_SSE2_INTRINSICS)
+		// Instruction costs taken from Agner's instruction tables
+		// Cost:	ops, latency, throughput, execution port
+
+	#if defined(RTM_COMPILER_CLANG) || defined(RTM_COMPILER_GCC)
+		#if RTM_HAS_BUILTIN(__builtin_shufflevector)
+		// GCC/Clang offer a builtin intrinsic to generate optimal assembly for this
+		return __builtin_shufflevector(input0, input1, int(comp0), int(comp1), int(comp2), int(comp3));
+		#endif
+	#endif
+
+	#if defined(RTM_AVX_INTRINSICS)
+		// TODO: AVX introduced the permute instruction (_mm_permute_ps) but on some AMD processors like Zen2
+		// the instruction has much higher latency and a lower reciprocal throughput which makes it a poor fit
+		// On the up side, it allows to load the input directly from memory in a single instruction
+		// but for a function like vector_mix, we cannot assume whether any input is in memory or register
+		// To make a smart choice for this, we would need to know at compile time what processor we are targeting
+		// and this is not available to us. For that reason, I have opted to not implement its support for the
+		// time being.
+	#endif // defined(RTM_AVX_INTRINSICS)
+
+	#if defined(RTM_SSE4_INTRINSICS)
+		// blendps is generally always faster than other instructions and/or it can execute over more ports
+		// AMD Jaguar:	???
+		// AMD Zen 2:	1, 1, 0.33, P013
+		// AMD Zen 4:	1, 1, 0.25, P0123
+
         // Each component comes from the respective position of input 0 or input 1
         if (rtm_impl::static_condition<(comp0 == mix4::a || comp0 == mix4::x) && (comp1 == mix4::b || comp1 == mix4::y) &&
                                        (comp2 == mix4::c || comp2 == mix4::z) && (comp3 == mix4::d || comp3 == mix4::w)>::test())
@@ -3567,6 +3601,11 @@ namespace rtm
                                  (comp2 == mix4::c ? 4 : 0) | (comp3 == mix4::d ? 8 : 0);
             return _mm_blend_ps(input0, input1, mask);
         }
+
+		// insertps would otherwise require 2 shuffle instructions
+		// AMD Jaguar:	1, ?, 0.5, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.33, P123
 
         // First component comes from input 1, others come from the respective positions of input 0
         if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && comp1 == mix4::y && comp2 == mix4::z && comp3 == mix4::w>::test())
@@ -3599,9 +3638,114 @@ namespace rtm
         // Fourth component comes from input 0, others come from the respective positions of input 1
         if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::c && rtm_impl::is_mix_xyzw(comp3)>::test())
             return _mm_insert_ps(input1, input0, ((int(comp3) % 4) << 6) | (3 << 4));
-#endif // defined(RTM_SSE4_INTRINSICS)
+	#endif // defined(RTM_SSE4_INTRINSICS)
 
-#if defined(RTM_SSE2_INTRINSICS)
+	#if defined(RTM_SSE3_INTRINSICS)
+		// movs[lh]dup is typically as fast or faster than shufps
+		// AMD Jaguar:	1, 1, 0.5, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.33, P123
+
+		// Duplicate low elements of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::z && comp3 == mix4::z>::test())
+			return _mm_moveldup_ps(input0);
+
+		// Duplicate low elements of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::a && comp2 == mix4::c && comp3 == mix4::c>::test())
+			return _mm_moveldup_ps(input1);
+
+		// Duplicate high elements of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::y && comp2 == mix4::w && comp3 == mix4::w>::test())
+			return _mm_movehdup_ps(input0);
+
+		// Duplicate high elements of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::b && comp2 == mix4::d && comp3 == mix4::d>::test())
+			return _mm_movehdup_ps(input1);
+	#endif // defined(RTM_SSE3_INTRINSICS)
+
+		// unpck[hl]ps is typically as fast as shufps
+		// AMD Jaguar:	1, 2, 0.5, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.33, P123
+
+		// Low words from both inputs are interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a && comp2 == mix4::y && comp3 == mix4::b>::test())
+			return _mm_unpacklo_ps(input0, input1);
+
+		// Low words from both inputs are interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::x && comp2 == mix4::b && comp3 == mix4::y>::test())
+			return _mm_unpacklo_ps(input1, input0);
+
+		// Low word from input 0 is interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::y && comp3 == mix4::y>::test())
+			return _mm_unpacklo_ps(input0, input0);
+
+		// Low word from input 1 is interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::a && comp2 == mix4::b && comp3 == mix4::b>::test())
+			return _mm_unpacklo_ps(input1, input1);
+
+		// High words from both inputs are interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::c && comp2 == mix4::w && comp3 == mix4::d>::test())
+			return _mm_unpackhi_ps(input0, input1);
+
+		// High words from both inputs are interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::z && comp2 == mix4::d && comp3 == mix4::w>::test())
+			return _mm_unpackhi_ps(input1, input0);
+
+		// High word from input 0 is interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::z && comp2 == mix4::w && comp3 == mix4::w>::test())
+			return _mm_unpackhi_ps(input0, input0);
+
+		// High word from input 1 is interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::c && comp2 == mix4::d && comp3 == mix4::d>::test())
+			return _mm_unpackhi_ps(input1, input1);
+
+#if 0
+		// mov[lh/hl]ps is at times slower than shufps and it can execute on fewer ports
+		// Its usage can be replicated using a single shufps instruction.
+		// For these reasons, we do not use it. Code is left here to document that it was considered.
+		// AMD Jaguar:	1, 2, 2, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.5, P12
+
+		// Duplicate bottom half of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::x && comp3 == mix4::y>::test())
+			return _mm_movelh_ps(input0, input0);
+
+		// Duplicate bottom half of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::a && comp3 == mix4::b>::test())
+			return _mm_movelh_ps(input1, input1);
+
+		// Move bottom half of input 1 to top of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::a && comp3 == mix4::b>::test())
+			return _mm_movelh_ps(input0, input1);
+
+		// Move bottom half of input 0 to top of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::x && comp3 == mix4::y>::test())
+			return _mm_movelh_ps(input1, input0);
+
+		// Duplicate top half of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::w && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return _mm_movehl_ps(input0, input0);
+
+		// Duplicate top half of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::d && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return _mm_movehl_ps(input1, input1);
+
+		// Move top half of input 1 to top of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::w && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return _mm_movehl_ps(input1, input0);
+
+		// Move top half of input 0 to top of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::d && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return _mm_movehl_ps(input0, input1);
+#endif
+
+		// shufps is the baseline instruction for vector_mix
+		// AMD Jaguar:	1, 2, 0.5, FP01
+		// AMD Zen 2:	1, 1, 0.5, P12
+		// AMD Zen 4:	1, 1, 0.33, P123
+
 		// All four components come from input 0
 		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
 			return _mm_shuffle_ps(input0, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, int(comp1) % 4, int(comp0) % 4));
@@ -3618,141 +3762,278 @@ namespace rtm
 		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
 			return _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, int(comp1) % 4, int(comp0) % 4));
 
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 z0z0w1w1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(input0, z0z0w1w1, _MM_SHUFFLE(2, 0, int(comp1) % 4, int(comp0) % 4));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 z1z1w0w0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(input0, z1z1w0w0, _MM_SHUFFLE(2, 0, int(comp1) % 4, int(comp0) % 4));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 x0x0y1y1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			return _mm_shuffle_ps(x0x0y1y1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 x1x1y0y0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			return _mm_shuffle_ps(x1x1y0y0, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 z1z1w0w0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(input1, z1z1w0w0, _MM_SHUFFLE(2, 0, int(comp1) % 4, int(comp0) % 4));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 z0z0w1w1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(input1, z0z0w1w1, _MM_SHUFFLE(2, 0, int(comp1) % 4, int(comp0) % 4));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 x1x1y0y0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			return _mm_shuffle_ps(x1x1y0y0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 x0x0y1y1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			return _mm_shuffle_ps(x0x0y1y1, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp2) % 4, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 x0x0y1y1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			const __m128 z0z0w1w1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(x0x0y1y1, z0z0w1w1, _MM_SHUFFLE(2, 0, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 x1x1y0y0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			const __m128 z1z1w0w0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(x1x1y0y0, z1z1w0w0, _MM_SHUFFLE(2, 0, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && rtm_impl::is_mix_abcd(comp1) && rtm_impl::is_mix_abcd(comp2) && rtm_impl::is_mix_xyzw(comp3)>::test())
+		{
+			const __m128 x0x0y1y1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			const __m128 z1z1w0w0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(x0x0y1y1, z1z1w0w0, _MM_SHUFFLE(2, 0, 2, 0));
+		}
+
+		// Mixed components
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && rtm_impl::is_mix_xyzw(comp1) && rtm_impl::is_mix_xyzw(comp2) && rtm_impl::is_mix_abcd(comp3)>::test())
+		{
+			const __m128 x1x1y0y0 = _mm_shuffle_ps(input1, input0, _MM_SHUFFLE(int(comp1) % 4, int(comp1) % 4, int(comp0) % 4, int(comp0) % 4));
+			const __m128 z0z0w1w1 = _mm_shuffle_ps(input0, input1, _MM_SHUFFLE(int(comp3) % 4, int(comp3) % 4, int(comp2) % 4, int(comp2) % 4));
+			return _mm_shuffle_ps(x1x1y0y0, z0z0w1w1, _MM_SHUFFLE(2, 0, 2, 0));
+		}
+
+		// All vector_mix permutations are handled above, return a dummy value to avoid warnings
+		return _mm_setzero_ps();
+#elif defined(RTM_NEON_INTRINSICS)
+	#if defined(RTM_COMPILER_CLANG) || defined(RTM_COMPILER_GCC)
+		#if RTM_HAS_BUILTIN(__builtin_shufflevector)
+			// GCC/Clang offer a builtin intrinsic to generate optimal assembly for this
+			return __builtin_shufflevector(input0, input1, int(comp0), int(comp1), int(comp2), int(comp3));
+		#endif
+	#endif
+
+	#if defined(RTM_NEON64_INTRINSICS)
+		// Duplicate low words of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::y && comp3 == mix4::y>::test())
+			return vzip1q_f32(input0, input0);
+
+		// Duplicate low words of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::a && comp2 == mix4::b && comp3 == mix4::b>::test())
+			return vzip1q_f32(input1, input1);
+
 		// Low words from both inputs are interleaved
 		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a && comp2 == mix4::y && comp3 == mix4::b>::test())
-			return _mm_unpacklo_ps(input0, input1);
+			return vzip1q_f32(input0, input1);
 
 		// Low words from both inputs are interleaved
 		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::x && comp2 == mix4::b && comp3 == mix4::y>::test())
-			return _mm_unpacklo_ps(input1, input0);
+			return vzip1q_f32(input1, input0);
+
+		// Duplicate high words of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::z && comp2 == mix4::w && comp3 == mix4::w>::test())
+			return vzip2q_f32(input0, input0);
+
+		// Duplicate high words of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::c && comp2 == mix4::d && comp3 == mix4::d>::test())
+			return vzip2q_f32(input1, input1);
 
 		// High words from both inputs are interleaved
 		if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::c && comp2 == mix4::w && comp3 == mix4::d>::test())
-			return _mm_unpackhi_ps(input0, input1);
+			return vzip2q_f32(input0, input1);
 
 		// High words from both inputs are interleaved
 		if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::z && comp2 == mix4::d && comp3 == mix4::w>::test())
-			return _mm_unpackhi_ps(input1, input0);
-#endif	// defined(RTM_SSE2_INTRINSICS)
+			return vzip2q_f32(input1, input0);
 
-#if defined(RTM_NEON64_INTRINSICS)
-        // Low words from both inputs are interleaved
-        if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a && comp2 == mix4::y && comp3 == mix4::b>::test())
-            return vzip1q_f32(input0, input1);
+		// Even-numbered vector elements, interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::z && comp2 == mix4::x && comp3 == mix4::z>::test())
+			return vuzp1q_f32(input0, input0);
 
-        // Low words from both inputs are interleaved
-        if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::x && comp2 == mix4::b && comp3 == mix4::y>::test())
-            return vzip1q_f32(input1, input0);
+		// Even-numbered vector elements, interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::c && comp2 == mix4::a && comp3 == mix4::c>::test())
+			return vuzp1q_f32(input1, input1);
 
-        // High words from both inputs are interleaved
-        if (rtm_impl::static_condition<comp0 == mix4::z && comp1 == mix4::c && comp2 == mix4::w && comp3 == mix4::d>::test())
-            return vzip2q_f32(input0, input1);
+		// Even-numbered vector elements, consecutively
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::z && comp2 == mix4::a && comp3 == mix4::c>::test())
+			return vuzp1q_f32(input0, input1);
 
-        // High words from both inputs are interleaved
-        if (rtm_impl::static_condition<comp0 == mix4::c && comp1 == mix4::z && comp2 == mix4::d && comp3 == mix4::w>::test())
-            return vzip2q_f32(input1, input0);
+		// Even-numbered vector elements, consecutively
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::c && comp2 == mix4::x && comp3 == mix4::z>::test())
+			return vuzp1q_f32(input1, input0);
 
-        // Even-numbered vector elements, consecutively
-        if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::z && comp2 == mix4::a && comp3 == mix4::c>::test())
-            return vuzp1q_f32(input0, input1);
+		// Odd-numbered vector elements, interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::w && comp2 == mix4::y && comp3 == mix4::w>::test())
+			return vuzp2q_f32(input0, input0);
 
-        // Even-numbered vector elements, consecutively
-        if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::c && comp2 == mix4::x && comp3 == mix4::z>::test())
-            return vuzp1q_f32(input1, input0);
+		// Odd-numbered vector elements, interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::d && comp2 == mix4::b && comp3 == mix4::d>::test())
+			return vuzp2q_f32(input1, input1);
 
-        // Odd-numbered vector elements, consecutively
-        if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::w && comp2 == mix4::b && comp3 == mix4::d>::test())
-            return vuzp2q_f32(input0, input1);
+		// Odd-numbered vector elements, consecutively
+		if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::w && comp2 == mix4::b && comp3 == mix4::d>::test())
+			return vuzp2q_f32(input0, input1);
 
-        // Odd-numbered vector elements, consecutively
-        if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::d && comp2 == mix4::y && comp3 == mix4::w>::test())
-            return vuzp2q_f32(input1, input0);
+		// Odd-numbered vector elements, consecutively
+		if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::d && comp2 == mix4::y && comp3 == mix4::w>::test())
+			return vuzp2q_f32(input1, input0);
 
-        // Even-numbered vector elements, interleaved
-        if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a && comp2 == mix4::z && comp3 == mix4::c>::test())
-            return vtrn1q_f32(input0, input1);
+		// Duplicate even-numbered vector elements, consecutively
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::x && comp2 == mix4::z && comp3 == mix4::z>::test())
+			return vtrn1q_f32(input0, input0);
 
-        // Even-numbered vector elements, interleaved
-        if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::x && comp2 == mix4::c && comp3 == mix4::z>::test())
-            return vtrn1q_f32(input1, input0);
+		// Duplicate even-numbered vector elements, consecutively
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::a && comp2 == mix4::c && comp3 == mix4::c>::test())
+			return vtrn1q_f32(input1, input1);
 
-        // Odd-numbered vector elements, interleaved
-        if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::b && comp2 == mix4::w && comp3 == mix4::d>::test())
-            return vtrn2q_f32(input0, input1);
+		// Even-numbered vector elements, interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::a && comp2 == mix4::z && comp3 == mix4::c>::test())
+			return vtrn1q_f32(input0, input1);
 
-        // Odd-numbered vector elements, interleaved
-        if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::y && comp2 == mix4::d && comp3 == mix4::w>::test())
-            return vtrn2q_f32(input1, input0);
-#endif // defined(RTM_NEON64_INTRINSICS)
+		// Even-numbered vector elements, interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::x && comp2 == mix4::c && comp3 == mix4::z>::test())
+			return vtrn1q_f32(input1, input0);
 
-#if defined(RTM_NEON_INTRINSICS)
-        // The highest vector elements from input 0 and the lowest vector elements from input 1, consecutively
-        if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) &&
-                                       int(comp0) + 1 == int(comp1) &&
-                                       int(comp1) + 1 == int(comp2) &&
-                                       int(comp2) + 1 == int(comp3)>::test())
-            return vextq_f32(input0, input1, int(comp0) % 4);
+		// Duplicate odd-numbered vector elements, consecutively
+		if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::y && comp2 == mix4::w && comp3 == mix4::w>::test())
+			return vtrn2q_f32(input0, input0);
 
-        // The highest vector elements from input 1 and the lowest vector elements from input 0, consecutively
-        if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) &&
-                                       (int(comp0) + 1) % 8 == int(comp1) &&
-                                       (int(comp1) + 1) % 8 == int(comp2) &&
-                                       (int(comp2) + 1) % 8 == int(comp3)>::test())
-            return vextq_f32(input1, input0, int(comp0) % 4);
+		// Duplicate odd-numbered vector elements, consecutively
+		if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::b && comp2 == mix4::d && comp3 == mix4::d>::test())
+			return vtrn2q_f32(input1, input1);
 
-        // All four components come from input 0, reversed order in each doubleword
-        if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::x && comp2 == mix4::w && comp3 == mix4::z>::test())
-            return vrev64q_f32(input0);
+		// Odd-numbered vector elements, interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::b && comp2 == mix4::w && comp3 == mix4::d>::test())
+			return vtrn2q_f32(input0, input1);
 
-        // All four components come from input 1, reversed order in each doubleword
-        if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::a && comp2 == mix4::d && comp3 == mix4::c>::test())
-            return vrev64q_f32(input1);
+		// Odd-numbered vector elements, interleaved
+		if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::y && comp2 == mix4::d && comp3 == mix4::w>::test())
+			return vtrn2q_f32(input1, input0);
+	#endif // defined(RTM_NEON64_INTRINSICS)
 
-        // First component comes from input 1, others come from the respective positions of input 0
-        if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && comp1 == mix4::y && comp2 == mix4::z && comp3 == mix4::w>::test())
-            return vsetq_lane_f32(vgetq_lane_f32(input1, int(comp0) % 4), input0, 0);
+		// The highest vector elements from input 0 and the lowest vector elements from input 1, consecutively
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) &&
+									int(comp0) + 1 == int(comp1) &&
+									int(comp1) + 1 == int(comp2) &&
+									int(comp2) + 1 == int(comp3)>::test())
+			return vextq_f32(input0, input1, int(comp0) % 4);
 
-        // Second component comes from input 1, others come from the respective positions of input 0
-        if (rtm_impl::static_condition<comp0 == mix4::x && rtm_impl::is_mix_abcd(comp1) && comp2 == mix4::z && comp3 == mix4::w>::test())
-            return vsetq_lane_f32(vgetq_lane_f32(input1, int(comp1) % 4), input0, 1);
+		// The highest vector elements from input 1 and the lowest vector elements from input 0, consecutively
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) &&
+									(int(comp0) + 1) % 8 == int(comp1) &&
+									(int(comp1) + 1) % 8 == int(comp2) &&
+									(int(comp2) + 1) % 8 == int(comp3)>::test())
+			return vextq_f32(input1, input0, int(comp0) % 4);
 
-        // Third component comes from input 1, others come from the respective positions of input 0
-        if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && rtm_impl::is_mix_abcd(comp2) && comp3 == mix4::w>::test())
-            return vsetq_lane_f32(vgetq_lane_f32(input1, int(comp2) % 4), input0, 2);
+		// All four components come from input 0, reversed order in each doubleword
+		if (rtm_impl::static_condition<comp0 == mix4::y && comp1 == mix4::x && comp2 == mix4::w && comp3 == mix4::z>::test())
+			return vrev64q_f32(input0);
 
-        // Fourth component comes from input 1, others come from the respective positions of input 0
-        if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::z && rtm_impl::is_mix_abcd(comp3)>::test())
-            return vsetq_lane_f32(vgetq_lane_f32(input1, int(comp3) % 4), input0, 3);
+		// All four components come from input 1, reversed order in each doubleword
+		if (rtm_impl::static_condition<comp0 == mix4::b && comp1 == mix4::a && comp2 == mix4::d && comp3 == mix4::c>::test())
+			return vrev64q_f32(input1);
 
-        // First component comes from input 0, others come from the respective positions of input 1
-        if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && comp1 == mix4::b && comp2 == mix4::c && comp3 == mix4::d>::test())
-            return vsetq_lane_f32(vgetq_lane_f32(input0, int(comp0) % 4), input1, 0);
+		// First component comes from input 1, others come from the respective positions of input 0
+		if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0) && comp1 == mix4::y && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return vsetq_lane_f32(vgetq_lane_f32(input1, int(comp0) % 4), input0, 0);
 
-        // Second component comes from input 0, others come from the respective positions of input 1
-        if (rtm_impl::static_condition<comp0 == mix4::a && rtm_impl::is_mix_xyzw(comp1) && comp2 == mix4::c && comp3 == mix4::d>::test())
-            return vsetq_lane_f32(vgetq_lane_f32(input0, int(comp1) % 4), input1, 1);
+		// Second component comes from input 1, others come from the respective positions of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && rtm_impl::is_mix_abcd(comp1) && comp2 == mix4::z && comp3 == mix4::w>::test())
+			return vsetq_lane_f32(vgetq_lane_f32(input1, int(comp1) % 4), input0, 1);
 
-        // Third component comes from input 0, others come from the respective positions of input 1
-        if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && rtm_impl::is_mix_xyzw(comp2) && comp3 == mix4::d>::test())
-            return vsetq_lane_f32(vgetq_lane_f32(input0, int(comp2) % 4), input1, 2);
+		// Third component comes from input 1, others come from the respective positions of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && rtm_impl::is_mix_abcd(comp2) && comp3 == mix4::w>::test())
+			return vsetq_lane_f32(vgetq_lane_f32(input1, int(comp2) % 4), input0, 2);
 
-        // Fourth component comes from input 0, others come from the respective positions of input 1
-        if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::c && rtm_impl::is_mix_xyzw(comp3)>::test())
-            return vsetq_lane_f32(vgetq_lane_f32(input0, int(comp3) % 4), input1, 3);
+		// Fourth component comes from input 1, others come from the respective positions of input 0
+		if (rtm_impl::static_condition<comp0 == mix4::x && comp1 == mix4::y && comp2 == mix4::z && rtm_impl::is_mix_abcd(comp3)>::test())
+			return vsetq_lane_f32(vgetq_lane_f32(input1, int(comp3) % 4), input0, 3);
 
+		// First component comes from input 0, others come from the respective positions of input 1
+		if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0) && comp1 == mix4::b && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return vsetq_lane_f32(vgetq_lane_f32(input0, int(comp0) % 4), input1, 0);
 
-        // All comes from the same position
-        if (rtm_impl::static_condition<comp0 == comp1 && comp0 == comp2 && comp0 == comp3>::test()) {
-            // All comes from the same position of input0
-            if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0)>::test())
-                return vmovq_n_f32(vgetq_lane_f32(input0, int(comp0) % 4));
-            // All comes from the same position of input1
-            if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0)>::test())
-                return vmovq_n_f32(vgetq_lane_f32(input1, int(comp0) % 4));
-        }
-#endif // defined(RTM_NEON_INTRINSICS)
+		// Second component comes from input 0, others come from the respective positions of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && rtm_impl::is_mix_xyzw(comp1) && comp2 == mix4::c && comp3 == mix4::d>::test())
+			return vsetq_lane_f32(vgetq_lane_f32(input0, int(comp1) % 4), input1, 1);
 
-        // Slow code path, not yet optimized or not using intrinsics
+		// Third component comes from input 0, others come from the respective positions of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && rtm_impl::is_mix_xyzw(comp2) && comp3 == mix4::d>::test())
+			return vsetq_lane_f32(vgetq_lane_f32(input0, int(comp2) % 4), input1, 2);
+
+		// Fourth component comes from input 0, others come from the respective positions of input 1
+		if (rtm_impl::static_condition<comp0 == mix4::a && comp1 == mix4::b && comp2 == mix4::c && rtm_impl::is_mix_xyzw(comp3)>::test())
+			return vsetq_lane_f32(vgetq_lane_f32(input0, int(comp3) % 4), input1, 3);
+
+		// All comes from the same position
+		if (rtm_impl::static_condition<comp0 == comp1 && comp0 == comp2 && comp0 == comp3>::test())
+		{
+			// All comes from the same position of input0
+			if (rtm_impl::static_condition<rtm_impl::is_mix_xyzw(comp0)>::test())
+				return vmovq_n_f32(vgetq_lane_f32(input0, int(comp0) % 4));
+
+			// All comes from the same position of input1
+			if (rtm_impl::static_condition<rtm_impl::is_mix_abcd(comp0)>::test())
+				return vmovq_n_f32(vgetq_lane_f32(input1, int(comp0) % 4));
+		}
+
+		// Fallback to handle remaining cases
+		const float x = vgetq_lane_f32(rtm_impl::is_mix_xyzw(comp0) ? input0 : input1, int(comp0) % 4);
+		const float y = vgetq_lane_f32(rtm_impl::is_mix_xyzw(comp1) ? input0 : input1, int(comp1) % 4);
+		const float z = vgetq_lane_f32(rtm_impl::is_mix_xyzw(comp2) ? input0 : input1, int(comp2) % 4);
+		const float w = vgetq_lane_f32(rtm_impl::is_mix_xyzw(comp3) ? input0 : input1, int(comp3) % 4);
+		const float32x2_t xy = vset_lane_f32(y, vmov_n_f32(x), 1);
+		const float32x2_t zw = vset_lane_f32(w, vmov_n_f32(z), 1);
+		return vcombine_f32(xy, zw);
+#else
+		// Non-simd variant
 		constexpr component4 component0 = rtm_impl::mix_to_component(comp0);
 		constexpr component4 component1 = rtm_impl::mix_to_component(comp1);
 		constexpr component4 component2 = rtm_impl::mix_to_component(comp2);
@@ -3775,27 +4056,64 @@ namespace rtm
 		const float w = rtm_impl::is_mix_xyzw(comp3) ? w0 : w1;
 
 		return vector_set(x, y, z, w);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [x] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_x(vector4f_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::x, mix4::x, mix4::x, mix4::x>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_x(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_shuffle_ps(input, input, _MM_SHUFFLE(0, 0, 0, 0));
+#elif defined(RTM_NEON_INTRINSICS)
+		return vmovq_n_f32(vgetq_lane_f32(input, 0));
+#else
+		return vector4f{ input.x, input.x, input.x, input.x };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [y] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_y(vector4f_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::y, mix4::y, mix4::y, mix4::y>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_y(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_shuffle_ps(input, input, _MM_SHUFFLE(1, 1, 1, 1));
+#elif defined(RTM_NEON_INTRINSICS)
+		return vmovq_n_f32(vgetq_lane_f32(input, 1));
+#else
+		return vector4f{ input.y, input.y, input.y, input.y };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [z] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_z(vector4f_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::z, mix4::z, mix4::z, mix4::z>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_z(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_shuffle_ps(input, input, _MM_SHUFFLE(2, 2, 2, 2));
+#elif defined(RTM_NEON_INTRINSICS)
+		return vmovq_n_f32(vgetq_lane_f32(input, 2));
+#else
+		return vector4f{ input.z, input.z, input.z, input.z };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [w] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_w(vector4f_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::w, mix4::w, mix4::w, mix4::w>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_dup_w(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_shuffle_ps(input, input, _MM_SHUFFLE(3, 3, 3, 3));
+#elif defined(RTM_NEON_INTRINSICS)
+		return vmovq_n_f32(vgetq_lane_f32(input, 3));
+#else
+		return vector4f{ input.w, input.w, input.w, input.w };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Logical
