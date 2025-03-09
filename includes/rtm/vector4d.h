@@ -3618,22 +3618,54 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [x] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_dup_x(vector4d_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::x, mix4::x, mix4::x, mix4::x>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_dup_x(vector4d_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		__m128d value = _mm_shuffle_pd(input.xy, input.xy, _MM_SHUFFLE2(0, 0));
+		return vector4d{ value, value };
+#else
+		return vector4d{ input.x, input.x, input.x, input.x };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [y] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_dup_y(vector4d_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::y, mix4::y, mix4::y, mix4::y>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_dup_y(vector4d_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		__m128d value = _mm_shuffle_pd(input.xy, input.xy, _MM_SHUFFLE2(1, 1));
+		return vector4d{ value, value };
+#else
+		return vector4d{ input.y, input.y, input.y, input.y };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [z] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_dup_z(vector4d_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::z, mix4::z, mix4::z, mix4::z>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_dup_z(vector4d_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		__m128d value = _mm_shuffle_pd(input.zw, input.zw, _MM_SHUFFLE2(0, 0));
+		return vector4d{ value, value };
+#else
+		return vector4d{ input.z, input.z, input.z, input.z };
+#endif
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Replicates the [w] component in all components.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_dup_w(vector4d_arg0 input) RTM_NO_EXCEPT { return vector_mix<mix4::w, mix4::w, mix4::w, mix4::w>(input, input); }
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4d RTM_SIMD_CALL vector_dup_w(vector4d_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		__m128d value = _mm_shuffle_pd(input.zw, input.zw, _MM_SHUFFLE2(1, 1));
+		return vector4d{ value, value };
+#else
+		return vector4d{ input.w, input.w, input.w, input.w };
+#endif
+	}
 
 
 	//////////////////////////////////////////////////////////////////////////
