@@ -25,17 +25,11 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "catch2.impl.h"
-
 #include <rtm/type_traits.h>
-#include <rtm/scalarf.h>
-#include <rtm/scalard.h>
-#include <rtm/vector4f.h>
-#include <rtm/vector4d.h>
-#include <rtm/quatf.h>
-#include <rtm/quatd.h>
-#include <rtm/mask4f.h>
-#include <rtm/mask4d.h>
+
+// cpp files that include this header must include the vector header they wish to use
+//#include <rtm/vector4f.h>
+//#include <rtm/vector4d.h>
 
 #include <cstring>
 #include <limits>
@@ -44,16 +38,7 @@
 using namespace rtm;
 
 template<typename Vector4Type, typename FloatType>
-inline const FloatType* vector_as_float_ptr_raw(const Vector4Type& input);
-
-template<>
-inline const float* vector_as_float_ptr_raw<vector4f, float>(const vector4f& input)
-{
-	return vector_to_pointer(input);
-}
-
-template<>
-inline const double* vector_as_float_ptr_raw<vector4d, double>(const vector4d& input)
+inline const FloatType* vector_as_float_ptr_raw(const Vector4Type& input)
 {
 	return vector_to_pointer(input);
 }
