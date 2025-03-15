@@ -25,6 +25,7 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "rtm/config.h"
 #include "rtm/impl/detect_arch.h"
 #include "rtm/impl/detect_compiler.h"
 
