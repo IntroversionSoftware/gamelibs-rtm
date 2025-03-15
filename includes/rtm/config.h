@@ -85,3 +85,7 @@
 // compiler command line. You can disable SIMD intrinsic usage by defining RTM_NO_INTRINSICS
 //#define RTM_NO_INTRINSICS
 
+// If you use C++20 or greater, you can disable std::bit_cast usage by defining RTM_NO_BIT_CAST
+// This is sometimes necessary if you compile with a modern compiler but use an older stdlib
+// that does not contain the bit_cast header
+//#define RTM_NO_BIT_CAST

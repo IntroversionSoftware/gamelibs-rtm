@@ -24,11 +24,13 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "rtm/config.h"
 #include "rtm/version.h"
 #include "rtm/impl/compiler_utils.h"
 #include "rtm/impl/detect_cpp_version.h"
 
-#if RTM_CPP_VERSION >= RTM_CPP_VERSION_20
+// Use RTM_NO_BIT_CAST to disable std::bit_cast
+#if RTM_CPP_VERSION >= RTM_CPP_VERSION_20 && !defined(RTM_NO_BIT_CAST)
 	#include <bit>
 #endif
 
@@ -44,7 +46,7 @@ namespace rtm
 		// C++20 introduced std::bit_cast which is safer than reinterpret_cast
 		//////////////////////////////////////////////////////////////////////////
 
-	#if RTM_CPP_VERSION >= RTM_CPP_VERSION_20
+	#if RTM_CPP_VERSION >= RTM_CPP_VERSION_20 && !defined(RTM_NO_BIT_CAST)
 		using std::bit_cast;
 	#else
 		template<class dest_type_t, class src_type_t>
