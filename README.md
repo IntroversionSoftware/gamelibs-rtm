@@ -1,7 +1,7 @@
 [![CLA assistant](https://cla-assistant.io/readme/badge/nfrechette/rtm)](https://cla-assistant.io/nfrechette/rtm)
 [![All Contributors](https://img.shields.io/github/all-contributors/nfrechette/rtm)](#contributors-)
 [![Build status](https://ci.appveyor.com/api/projects/status/7eh9maq9a721e5on/branch/develop?svg=true)](https://ci.appveyor.com/project/nfrechette/rtm)
-[![Build status](https://github.com/nfrechette/rtm/workflows/build/badge.svg)](https://github.com/nfrechette/rtm/actions)
+[![Build status](https://github.com/nfrechette/rtm/actions/workflows/build_push.yml/badge.svg)](https://github.com/nfrechette/rtm/actions)
 [![Sonar Status](https://sonarcloud.io/api/project_badges/measure?project=nfrechette_rtm&metric=alert_status)](https://sonarcloud.io/dashboard?id=nfrechette_rtm)
 [![GitHub release](https://img.shields.io/github/release/nfrechette/rtm.svg)](https://github.com/nfrechette/rtm/releases)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/nfrechette/rtm/master/LICENSE)
