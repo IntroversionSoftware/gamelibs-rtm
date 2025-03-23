@@ -29,6 +29,8 @@
 #include "rtm/impl/compiler_utils.h"
 #include "rtm/impl/detect_cpp_version.h"
 
+// See config.h for details on how to configure std::bit_cast for your project
+
 // Use RTM_NO_BIT_CAST to disable std::bit_cast
 #if RTM_CPP_VERSION >= RTM_CPP_VERSION_20 && !defined(RTM_NO_BIT_CAST)
 	#include <bit>
