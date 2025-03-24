@@ -690,7 +690,7 @@ void test_vector4_arithmetic_impl(const FloatType threshold)
 	CHECK(scalar_equal(vector_distance3_result, scalar_cast(vector_distance3_result_scalar)));
 
 	const FloatType vector_distance_squared3_result = vector_distance_squared3(test_value0, test_value1);
-	CHECK(scalar_near_equal(scalar_dot3<Vector4Type, FloatType>(test_value_diff, test_value_diff), vector_distance_squared3_result, threshold));
+	CHECK(scalar_near_equal(scalar_dot3<Vector4Type, FloatType>(test_value_diff, test_value_diff), vector_distance_squared3_result, scalar_sqrt(threshold)));
 	const ScalarType vector_distance_squared3_result_scalar = vector_distance_squared3_as_scalar(test_value0, test_value1);
 	CHECK(scalar_equal(vector_distance_squared3_result, scalar_cast(vector_distance_squared3_result_scalar)));
 
