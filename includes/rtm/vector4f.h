@@ -2320,6 +2320,24 @@ namespace rtm
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	// Returns the squared distance between two 3D points.
+	//////////////////////////////////////////////////////////////////////////
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE rtm_impl::vector4f_vector_dot3 RTM_SIMD_CALL vector_distance_squared3(vector4f_arg0 lhs, vector4f_arg1 rhs) RTM_NO_EXCEPT
+	{
+		const vector4f difference = vector_sub(lhs, rhs);
+		return rtm_impl::vector4f_vector_dot3{ difference, difference };
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Returns the squared distance between two 3D points.
+	//////////////////////////////////////////////////////////////////////////
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE scalarf RTM_SIMD_CALL vector_distance_squared3_as_scalar(vector4f_arg0 lhs, vector4f_arg1 rhs) RTM_NO_EXCEPT
+	{
+		const vector4f difference = vector_sub(lhs, rhs);
+		return vector_length_squared3_as_scalar(difference);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	// Returns a normalized vector2.
 	// If the length of the input is not finite or zero, the result is undefined.
 	// For a safe alternative, supply a fallback value and a threshold.

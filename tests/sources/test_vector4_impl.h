@@ -689,6 +689,11 @@ void test_vector4_arithmetic_impl(const FloatType threshold)
 	const ScalarType vector_distance3_result_scalar = vector_distance3_as_scalar(test_value0, test_value1);
 	CHECK(scalar_equal(vector_distance3_result, scalar_cast(vector_distance3_result_scalar)));
 
+	const FloatType vector_distance_squared3_result = vector_distance_squared3(test_value0, test_value1);
+	CHECK(scalar_near_equal(scalar_dot3<Vector4Type, FloatType>(test_value_diff, test_value_diff), vector_distance_squared3_result, scalar_sqrt(threshold)));
+	const ScalarType vector_distance_squared3_result_scalar = vector_distance_squared3_as_scalar(test_value0, test_value1);
+	CHECK(scalar_equal(vector_distance_squared3_result, scalar_cast(vector_distance_squared3_result_scalar)));
+
 	const Vector4Type scalar_normalize2_result = scalar_normalize2<Vector4Type, FloatType>(test_value0, zero, threshold);
 	const Vector4Type vector_normalize2_result = vector_normalize2(test_value0);
 	CHECK(scalar_near_equal(vector_get_x(vector_normalize2_result), vector_get_x(scalar_normalize2_result), threshold));
