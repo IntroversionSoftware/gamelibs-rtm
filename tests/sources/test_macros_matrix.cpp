@@ -240,7 +240,6 @@ TEST_CASE("macros matrixd", "[math][macros][matrix]")
 		CHECK(rtm::vector_all_near_equal(rtm::vector_set(3.0, 6.0, 9.0, 12.0), xyz2, threshold));
 	}
 
-#if 0	// not implemented yet
 	{
 		rtm::vector4d xyzw0 = rtm::vector_set(1.0, 2.0, 3.0, 20.0);
 		rtm::vector4d xyzw1 = rtm::vector_set(4.0, 5.0, 6.0, 21.0);
@@ -265,5 +264,4 @@ TEST_CASE("macros matrixd", "[math][macros][matrix]")
 		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(3.0, 6.0, 9.0), xyzw2, threshold));
 		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(20.0, 21.0, 22.0), xxx, threshold));
 	}
-#endif
 }
