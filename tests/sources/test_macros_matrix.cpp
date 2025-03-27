@@ -27,7 +27,7 @@
 #include <rtm/macros.h>
 #include <rtm/vector4f.h>
 
-TEST_CASE("macros", "[math][macros]")
+TEST_CASE("macros matrix", "[math][macros][matrix]")
 {
 	const float threshold = 0.0F;	// Result must be binary exact!
 
