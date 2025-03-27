@@ -25,9 +25,10 @@
 #include "catch2.impl.h"
 
 #include <rtm/macros.h>
+#include <rtm/vector4d.h>
 #include <rtm/vector4f.h>
 
-TEST_CASE("macros matrix", "[math][macros][matrix]")
+TEST_CASE("macros matrixf", "[math][macros][matrix]")
 {
 	const float threshold = 0.0F;	// Result must be binary exact!
 
@@ -126,4 +127,111 @@ TEST_CASE("macros matrix", "[math][macros][matrix]")
 		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(3.0F, 6.0F, 9.0F), xyzw2, threshold));
 		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(20.0F, 21.0F, 22.0F), xxx, threshold));
 	}
+}
+
+TEST_CASE("macros matrixd", "[math][macros][matrix]")
+{
+	const double threshold = 0.0;	// Result must be binary exact!
+
+	{
+		rtm::vector4d xyz0 = rtm::vector_set(1.0, 2.0, 3.0);
+		rtm::vector4d xyz1 = rtm::vector_set(4.0, 5.0, 6.0);
+		rtm::vector4d xyz2 = rtm::vector_set(7.0, 8.0, 9.0);
+
+		rtm::vector4d xxx;
+		rtm::vector4d yyy;
+		rtm::vector4d zzz;
+		RTM_MATRIXD_TRANSPOSE_3X3(xyz0, xyz1, xyz2, xxx, yyy, zzz);
+
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(1.0, 4.0, 7.0), xxx, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(2.0, 5.0, 8.0), yyy, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(3.0, 6.0, 9.0), zzz, threshold));
+
+		// Test when input == output
+		RTM_MATRIXD_TRANSPOSE_3X3(xyz0, xyz1, xyz2, xyz0, xyz1, xyz2);
+
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(1.0, 4.0, 7.0), xyz0, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(2.0, 5.0, 8.0), xyz1, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(3.0, 6.0, 9.0), xyz2, threshold));
+	}
+
+#if 0	// not implemented yet
+	{
+		rtm::vector4d xyzw0 = rtm::vector_set(1.0, 2.0, 3.0, 20.0);
+		rtm::vector4d xyzw1 = rtm::vector_set(4.0, 5.0, 6.0, 21.0);
+		rtm::vector4d xyzw2 = rtm::vector_set(7.0, 8.0, 9.0, 22.0);
+		rtm::vector4d xyzw3 = rtm::vector_set(10.0, 11.0, 12.0, 23.0);
+
+		rtm::vector4d xxxx;
+		rtm::vector4d yyyy;
+		rtm::vector4d zzzz;
+		rtm::vector4d wwww;
+		RTM_MATRIXD_TRANSPOSE_4X4(xyzw0, xyzw1, xyzw2, xyzw3, xxxx, yyyy, zzzz, wwww);
+
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(1.0, 4.0, 7.0, 10.0), xxxx, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(2.0, 5.0, 8.0, 11.0), yyyy, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(3.0, 6.0, 9.0, 12.0), zzzz, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(20.0, 21.0, 22.0, 23.0), wwww, threshold));
+
+		// Test when input == output
+		RTM_MATRIXD_TRANSPOSE_4X4(xyzw0, xyzw1, xyzw2, xyzw3, xyzw0, xyzw1, xyzw2, xyzw3);
+
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(1.0, 4.0, 7.0, 10.0), xyzw0, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(2.0, 5.0, 8.0, 11.0), xyzw1, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(3.0, 6.0, 9.0, 12.0), xyzw2, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(20.0, 21.0, 22.0, 23.0), xyzw3, threshold));
+	}
+#endif
+
+#if 0	// not implemented yet
+	{
+		rtm::vector4d xyz0 = rtm::vector_set(1.0, 2.0, 3.0, 20.0);
+		rtm::vector4d xyz1 = rtm::vector_set(4.0, 5.0, 6.0, 21.0);
+		rtm::vector4d xyz2 = rtm::vector_set(7.0, 8.0, 9.0, 22.0);
+		rtm::vector4d xyz3 = rtm::vector_set(10.0, 11.0, 12.0, 23.0);
+
+		rtm::vector4d xxxx;
+		rtm::vector4d yyyy;
+		rtm::vector4d zzzz;
+		RTM_MATRIXD_TRANSPOSE_4X3(xyz0, xyz1, xyz2, xyz3, xxxx, yyyy, zzzz);
+
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(1.0, 4.0, 7.0, 10.0), xxxx, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(2.0, 5.0, 8.0, 11.0), yyyy, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(3.0, 6.0, 9.0, 12.0), zzzz, threshold));
+
+		// Test when input == output
+		RTM_MATRIXD_TRANSPOSE_4X3(xyz0, xyz1, xyz2, xyz3, xyz0, xyz1, xyz2);
+
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(1.0, 4.0, 7.0, 10.0), xyz0, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(2.0, 5.0, 8.0, 11.0), xyz1, threshold));
+		CHECK(rtm::vector_all_near_equal(rtm::vector_set(3.0, 6.0, 9.0, 12.0), xyz2, threshold));
+	}
+#endif
+
+#if 0	// not implemented yet
+	{
+		rtm::vector4d xyzw0 = rtm::vector_set(1.0, 2.0, 3.0, 20.0);
+		rtm::vector4d xyzw1 = rtm::vector_set(4.0, 5.0, 6.0, 21.0);
+		rtm::vector4d xyzw2 = rtm::vector_set(7.0, 8.0, 9.0, 22.0);
+
+		rtm::vector4d xxx;
+		rtm::vector4d yyy;
+		rtm::vector4d zzz;
+		rtm::vector4d www;
+		RTM_MATRIXD_TRANSPOSE_3X4(xyzw0, xyzw1, xyzw2, xxx, yyy, zzz, www);
+
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(1.0, 4.0, 7.0), xxx, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(2.0, 5.0, 8.0), yyy, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(3.0, 6.0, 9.0), zzz, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(20.0, 21.0, 22.0), www, threshold));
+
+		// Test when input == output
+		RTM_MATRIXD_TRANSPOSE_3X4(xyzw0, xyzw1, xyzw2, xyzw0, xyzw1, xyzw2, xxx);
+
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(1.0, 4.0, 7.0), xyzw0, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(2.0, 5.0, 8.0), xyzw1, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(3.0, 6.0, 9.0), xyzw2, threshold));
+		CHECK(rtm::vector_all_near_equal3(rtm::vector_set(20.0, 21.0, 22.0), xxx, threshold));
+	}
+#endif
 }
