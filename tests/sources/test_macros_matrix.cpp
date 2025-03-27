@@ -33,6 +33,24 @@ TEST_CASE("macros matrixf", "[math][macros][matrix]")
 	const float threshold = 0.0F;	// Result must be binary exact!
 
 	{
+		rtm::vector4f xy0 = rtm::vector_set(1.0F, 2.0F, 3.0F);
+		rtm::vector4f xy1 = rtm::vector_set(4.0F, 5.0F, 6.0F);
+
+		rtm::vector4f xx;
+		rtm::vector4f yy;
+		RTM_MATRIXF_TRANSPOSE_2X2(xy0, xy1, xx, yy);
+
+		CHECK(rtm::vector_all_near_equal2(rtm::vector_set(1.0F, 4.0F, 7.0F), xx, threshold));
+		CHECK(rtm::vector_all_near_equal2(rtm::vector_set(2.0F, 5.0F, 8.0F), yy, threshold));
+
+		// Test when input == output
+		RTM_MATRIXF_TRANSPOSE_2X2(xy0, xy1, xy0, xy1);
+
+		CHECK(rtm::vector_all_near_equal2(rtm::vector_set(1.0F, 4.0F, 7.0F), xy0, threshold));
+		CHECK(rtm::vector_all_near_equal2(rtm::vector_set(2.0F, 5.0F, 8.0F), xy1, threshold));
+	}
+
+	{
 		rtm::vector4f xyz0 = rtm::vector_set(1.0F, 2.0F, 3.0F);
 		rtm::vector4f xyz1 = rtm::vector_set(4.0F, 5.0F, 6.0F);
 		rtm::vector4f xyz2 = rtm::vector_set(7.0F, 8.0F, 9.0F);
@@ -132,6 +150,24 @@ TEST_CASE("macros matrixf", "[math][macros][matrix]")
 TEST_CASE("macros matrixd", "[math][macros][matrix]")
 {
 	const double threshold = 0.0;	// Result must be binary exact!
+
+	{
+		rtm::vector4d xy0 = rtm::vector_set(1.0, 2.0, 3.0);
+		rtm::vector4d xy1 = rtm::vector_set(4.0, 5.0, 6.0);
+
+		rtm::vector4d xx;
+		rtm::vector4d yy;
+		RTM_MATRIXD_TRANSPOSE_2X2(xy0, xy1, xx, yy);
+
+		CHECK(rtm::vector_all_near_equal2(rtm::vector_set(1.0, 4.0, 7.0), xx, threshold));
+		CHECK(rtm::vector_all_near_equal2(rtm::vector_set(2.0, 5.0, 8.0), yy, threshold));
+
+		// Test when input == output
+		RTM_MATRIXD_TRANSPOSE_2X2(xy0, xy1, xy0, xy1);
+
+		CHECK(rtm::vector_all_near_equal2(rtm::vector_set(1.0, 4.0, 7.0), xy0, threshold));
+		CHECK(rtm::vector_all_near_equal2(rtm::vector_set(2.0, 5.0, 8.0), xy1, threshold));
+	}
 
 	{
 		rtm::vector4d xyz0 = rtm::vector_set(1.0, 2.0, 3.0);

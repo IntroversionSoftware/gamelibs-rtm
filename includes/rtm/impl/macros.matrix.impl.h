@@ -187,6 +187,72 @@ RTM_IMPL_FILE_PRAGMA_PUSH
 
 #if defined(RTM_NEON_INTRINSICS)
 	//////////////////////////////////////////////////////////////////////////
+	// Transposes a 2x2 matrix.
+	// All inputs and outputs must be rtm::vector4f.
+	//////////////////////////////////////////////////////////////////////////
+	#define RTM_MATRIXF_TRANSPOSE_2X2(input_xy0, input_xy1, output_xx, output_yy) \
+		do { \
+			const float32x4_t x0x1y0y1 = vzip1q_f32((input_xy0), (input_xy1)); \
+			(output_xx) = x0x1y0y1; \
+			(output_yy) = vextq_f32(x0x1y0y1, x0x1y0y1, 2); \
+		} while(0)
+#elif defined(RTM_SSE2_INTRINSICS)
+	//////////////////////////////////////////////////////////////////////////
+	// Transposes a 2x2 matrix.
+	// All inputs and outputs must be rtm::vector4f.
+	//////////////////////////////////////////////////////////////////////////
+	#define RTM_MATRIXF_TRANSPOSE_2X2(input_xy0, input_xy1, output_xx, output_yy) \
+		do { \
+			const __m128 x0x1y0y1 = _mm_unpacklo_ps((input_xy0), (input_xy1)); \
+			(output_xx) = x0x1y0y1; \
+			(output_yy) = _mm_movehl_ps(x0x1y0y1, x0x1y0y1); \
+		} while(0)
+#else
+	//////////////////////////////////////////////////////////////////////////
+	// Transposes a 2x2 matrix.
+	// All inputs and outputs must be rtm::vector4f.
+	//////////////////////////////////////////////////////////////////////////
+	#define RTM_MATRIXF_TRANSPOSE_2X2(input_xy0, input_xy1, output_xx, output_yy) \
+		do { \
+			const float input_x0 = (input_xy0).x; \
+			const float input_y0 = (input_xy0).y; \
+			const float input_x1 = (input_xy1).x; \
+			const float input_y1 = (input_xy1).y; \
+			(output_xx) = RTM_IMPL_NAMESPACE::vector4f { input_x0, input_x1, input_x0, input_x1 }; \
+			(output_yy) = RTM_IMPL_NAMESPACE::vector4f { input_y0, input_y1, input_y0, input_y1 }; \
+		} while(0)
+#endif
+
+#if defined(RTM_SSE2_INTRINSICS)
+	//////////////////////////////////////////////////////////////////////////
+	// Transposes a 2x2 matrix.
+	// All inputs and outputs must be rtm::vector4d.
+	//////////////////////////////////////////////////////////////////////////
+	#define RTM_MATRIXD_TRANSPOSE_2X2(input_xy0, input_xy1, output_xx, output_yy) \
+		do { \
+			const __m128d x0x1 = _mm_unpacklo_pd((input_xy0).xy, (input_xy1).xy); \
+			const __m128d y0y1 = _mm_unpackhi_pd((input_xy0).xy, (input_xy1).xy); \
+			(output_xx) = RTM_IMPL_NAMESPACE::vector4d { x0x1, x0x1 }; \
+			(output_yy) = RTM_IMPL_NAMESPACE::vector4d { y0y1, y0y1 }; \
+		} while(0)
+#else
+	//////////////////////////////////////////////////////////////////////////
+	// Transposes a 2x2 matrix.
+	// All inputs and outputs must be rtm::vector4d.
+	//////////////////////////////////////////////////////////////////////////
+	#define RTM_MATRIXD_TRANSPOSE_2X2(input_xy0, input_xy1, output_xx, output_yy) \
+		do { \
+			const double input_x0 = (input_xy0).x; \
+			const double input_y0 = (input_xy0).y; \
+			const double input_x1 = (input_xy1).x; \
+			const double input_y1 = (input_xy1).y; \
+			(output_xx) = RTM_IMPL_NAMESPACE::vector4d { input_x0, input_x1, input_x0, input_x1 }; \
+			(output_yy) = RTM_IMPL_NAMESPACE::vector4d { input_y0, input_y1, input_y0, input_y1 }; \
+		} while(0)
+#endif
+
+#if defined(RTM_NEON_INTRINSICS)
+	//////////////////////////////////////////////////////////////////////////
 	// Transposes a 4x3 matrix.
 	// All inputs and outputs must be rtm::vector4f.
 	//////////////////////////////////////////////////////////////////////////
