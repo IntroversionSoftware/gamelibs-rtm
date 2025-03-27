@@ -356,6 +356,48 @@ RTM_IMPL_FILE_PRAGMA_PUSH
 		} while(0)
 #endif
 
+#if defined(RTM_SSE2_INTRINSICS)
+	//////////////////////////////////////////////////////////////////////////
+	// Transposes a 4x3 matrix.
+	// All inputs and outputs must be rtm::vector4d.
+	//////////////////////////////////////////////////////////////////////////
+	#define RTM_MATRIXD_TRANSPOSE_4X3(input_xyz0, input_xyz1, input_xyz2, input_xyz3, output_xxxx, output_yyyy, output_zzzz) \
+		do { \
+			const __m128d x0x1 = _mm_unpacklo_pd(input_xyz0.xy, input_xyz1.xy); \
+			const __m128d y0y1 = _mm_unpackhi_pd(input_xyz0.xy, input_xyz1.xy); \
+			const __m128d x2x3 = _mm_unpacklo_pd(input_xyz2.xy, input_xyz3.xy); \
+			const __m128d y2y3 = _mm_unpackhi_pd(input_xyz2.xy, input_xyz3.xy); \
+			const __m128d z0z1 = _mm_unpacklo_pd(input_xyz0.zw, input_xyz1.zw); \
+			const __m128d z2z3 = _mm_unpacklo_pd(input_xyz2.zw, input_xyz3.zw); \
+			(output_xxxx) = RTM_IMPL_NAMESPACE::vector4d { x0x1, x2x3 }; \
+			(output_yyyy) = RTM_IMPL_NAMESPACE::vector4d { y0y1, y2y3 }; \
+			(output_zzzz) = RTM_IMPL_NAMESPACE::vector4d { z0z1, z2z3 }; \
+		} while(0)
+#else
+	//////////////////////////////////////////////////////////////////////////
+	// Transposes a 4x3 matrix.
+	// All inputs and outputs must be rtm::vector4d.
+	//////////////////////////////////////////////////////////////////////////
+	#define RTM_MATRIXD_TRANSPOSE_4X3(input_xyz0, input_xyz1, input_xyz2, input_xyz3, output_xxxx, output_yyyy, output_zzzz) \
+		do { \
+			const double input_x0 = (input_xyz0).x; \
+			const double input_y0 = (input_xyz0).y; \
+			const double input_z0 = (input_xyz0).z; \
+			const double input_x1 = (input_xyz1).x; \
+			const double input_y1 = (input_xyz1).y; \
+			const double input_z1 = (input_xyz1).z; \
+			const double input_x2 = (input_xyz2).x; \
+			const double input_y2 = (input_xyz2).y; \
+			const double input_z2 = (input_xyz2).z; \
+			const double input_x3 = (input_xyz3).x; \
+			const double input_y3 = (input_xyz3).y; \
+			const double input_z3 = (input_xyz3).z; \
+			(output_xxxx) = RTM_IMPL_NAMESPACE::vector4d { input_x0, input_x1, input_x2, input_x3 }; \
+			(output_yyyy) = RTM_IMPL_NAMESPACE::vector4d { input_y0, input_y1, input_y2, input_y3 }; \
+			(output_zzzz) = RTM_IMPL_NAMESPACE::vector4d { input_z0, input_z1, input_z2, input_z3 }; \
+		} while(0)
+#endif
+
 #if defined(RTM_NEON_INTRINSICS)
 	//////////////////////////////////////////////////////////////////////////
 	// Transposes a 3x4 matrix.
