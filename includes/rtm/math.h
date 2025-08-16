@@ -80,6 +80,10 @@
 		#if RTM_COMPILER_MSVC >= RTM_COMPILER_MSVC_2015
 			#define RTM_USE_VECTORCALL
 		#endif
+	// With Clang on windows, we can use __vectorcall as well
+	// Otherwise __m128 arguments are passed by reference which is terrible for performance
+	#elif defined(_MSC_VER) && defined(__clang__) && !defined(RTM_SIMD_CALL)
+		#define RTM_USE_VECTORCALL
 	#endif
 #endif
 
