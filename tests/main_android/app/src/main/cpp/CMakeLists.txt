@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.2...3.25)
 project(rtm_unit_tests CXX)
 
 # Project root is <rtm-dir>\tests\main_android

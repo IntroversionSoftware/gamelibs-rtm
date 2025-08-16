@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.2...3.25)
 project(rtm_bench CXX)
 
 # Project root is <rtm-dir>\tools\bench\main_android
