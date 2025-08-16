@@ -107,7 +107,7 @@
 	#include <arm_neon.h>
 #endif
 
-// Specify the SIMD calling convention is we can
+// Specify the SIMD calling convention if we can
 #if !defined(RTM_SIMD_CALL)
 	#if defined(RTM_USE_VECTORCALL)
 		#define RTM_SIMD_CALL __vectorcall
