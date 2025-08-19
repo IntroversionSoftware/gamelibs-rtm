@@ -1,6 +1,5 @@
 [![CLA assistant](https://cla-assistant.io/readme/badge/nfrechette/rtm)](https://cla-assistant.io/nfrechette/rtm)
 [![All Contributors](https://img.shields.io/github/all-contributors/nfrechette/rtm)](#contributors-)
-[![Build status](https://ci.appveyor.com/api/projects/status/7eh9maq9a721e5on/branch/develop?svg=true)](https://ci.appveyor.com/project/nfrechette/rtm)
 [![Build status](https://github.com/nfrechette/rtm/actions/workflows/build_push.yml/badge.svg)](https://github.com/nfrechette/rtm/actions)
 [![Sonar Status](https://sonarcloud.io/api/project_badges/measure?project=nfrechette_rtm&metric=alert_status)](https://sonarcloud.io/dashboard?id=nfrechette_rtm)
 [![GitHub release](https://img.shields.io/github/release/nfrechette/rtm.svg)](https://github.com/nfrechette/rtm/releases)
@@ -26,18 +25,15 @@ Much thought was put into designing the library for it to be as flexible and pow
 
 ## Supported platforms
 
-*  Windows VS2015 x86 and x64
-*  Windows (VS2017 to VS2022) x86, x64, and ARM64
-*  Windows (VS2017 to VS2022) with clang x86 and x64
-*  Linux (gcc 5 to 13) x86 and x64
-*  Linux (clang 4 to 15) x86 and x64
-*  OS X (Xcode 12.5, 13.2, 14.2) x64 and ARM64
-*  Android (NDK 21) ARMv7-A and ARM64
-*  iOS (Xcode 10.3, 11.7, 12.5, 13.2, 14.2) ARM64
-*  Emscripten (1.39.11) WASM
-*  MSYS2 x64
+Continuous integration tests a variety of platforms and configurations but it generally runs as-is anywhere where C++11 (or later) is supported. CI currently tests:
 
-The above supported platform list is only what is tested every release but if it compiles, it should work just fine.
+*  Windows VS2022: x86, x64, ARM64
+*  Linux GCC 12+: x86, x64
+*  Linux Clang 15+: x86, x64
+*  OS X XCode 15+: ARM64
+*  Emscripten 1.39.11: WASM
+
+Each releases is also manually tested on iOS and Android.
 
 ## Getting started
 
