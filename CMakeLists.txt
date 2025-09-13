@@ -13,6 +13,7 @@ set(USE_SIMD_INSTRUCTIONS true CACHE BOOL "Use SIMD instructions")
 set(WITH_VECTOR_MIX_TESTS false CACHE BOOL "Enable vector_mix unit tests")
 set(CPU_INSTRUCTION_SET false CACHE STRING "CPU instruction set")
 set(BUILD_BENCHMARK_EXE false CACHE BOOL "Enable the benchmark projects")
+set(IS_CROSS_COMPILING false CACHE BOOL "Whether or not we are cross-compiling")
 
 if(CMAKE_CONFIGURATION_TYPES)
 	set(CMAKE_CONFIGURATION_TYPES Debug Release)
