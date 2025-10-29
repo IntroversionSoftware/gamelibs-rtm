@@ -4004,21 +4004,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	// Returns per component the sine and cosine of the input angle.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK inline void RTM_SIMD_CALL vector_sincos(vector4d_arg0 input, vector4d& out_sine, vector4d& out_cosine) RTM_NO_EXCEPT
-	{
-		const vector4d x = scalar_sincos(vector_get_x_as_scalar(input));
-		const vector4d y = scalar_sincos(vector_get_y_as_scalar(input));
-		const vector4d z = scalar_sincos(vector_get_z_as_scalar(input));
-		const vector4d w = scalar_sincos(vector_get_w_as_scalar(input));
-
-		const vector4d cos_xy = vector_mix<mix4::y, mix4::b, mix4::y, mix4::b>(x, y);
-		const vector4d cos_zw = vector_mix<mix4::y, mix4::b, mix4::y, mix4::b>(z, w);
-		out_cosine = vector_mix<mix4::x, mix4::y, mix4::a, mix4::b>(cos_xy, cos_zw);
-
-		const vector4d sin_xy = vector_mix<mix4::x, mix4::a, mix4::x, mix4::a>(x, y);
-		const vector4d sin_zw = vector_mix<mix4::x, mix4::a, mix4::x, mix4::a>(z, w);
-		out_sine = vector_mix<mix4::x, mix4::y, mix4::a, mix4::b>(sin_xy, sin_zw);
-	}
+	RTM_DISABLE_SECURITY_COOKIE_CHECK void RTM_SIMD_CALL vector_sincos(vector4d_arg0 input, vector4d& out_sine, vector4d& out_cosine) RTM_NO_EXCEPT;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Returns per component the tangent of the input angle.
