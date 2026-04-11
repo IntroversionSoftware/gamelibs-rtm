@@ -29,6 +29,16 @@
 #include "rtm/impl/compiler_utils.h"
 #include "rtm/impl/detect_cpp_version.h"
 
+//////////////////////////////////////////////////////////////////////////
+// Detect if the current compilation environment supports bit operations.
+//////////////////////////////////////////////////////////////////////////
+
+#if !defined(RTM_NO_BIT_CAST)
+	#if !defined(__cpp_lib_bitops)
+		#define RTM_NO_BIT_CAST
+	#endif
+#endif
+
 // See config.h for details on how to configure std::bit_cast for your project
 
 // Use RTM_NO_BIT_CAST to disable std::bit_cast
